@@ -19,12 +19,29 @@ class ExampleTest extends DuskTestCase
      */
     public function testBasicExample()
     {
-         Cache::shouldReceive('get')
-                    ->once()
-                    ->with('key')
-                    ->andReturn('value');
+        //  Cache::shouldReceive('get')
+        //             ->once()
+        //             ->with('key')
+        //             ->andReturn('value');
 
-        $response = $this->get('/users');
+        // $response = $this->get('/users');
+        //  $this->browse(function (Browser $browser) {
+        //     $browser->visit('http://127.0.0.1:8000/register')
+        //             ->type('name', '1234y56')
+        //      ->type('email', 'ganaraj123456@gmail.com')
+        //             ->type('password', '1234y56')
+        //             ->type('password_confirmation', '1234y56')
+        //             // ->press('Register')
+
+        //             ->assertSee('Register');
+        // });
+           $response = $this->json('GET', 'http://103.206.115.37/omr_new/public/api/sendmessage?exam_id=30&notify_type=1&api_key=2y10CcFVl6k3gFHaKDzW1TH4TDJ0uM15hwnlIb0/fDUkRviOO4McnT');
+
+        $response
+            ->assertStatus(404)
+            ->assertJson([
+                'message' => "",                
+            ]);
 
     }
 }

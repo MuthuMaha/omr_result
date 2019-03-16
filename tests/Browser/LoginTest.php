@@ -16,7 +16,7 @@ class LoginTest extends DuskTestCase
     public function testExample()
     {
          $this->assertDatabaseHas('employees', [
-        'payroll_id' => 'ABC123'
+        'payroll_id' => 'AMP100050'
     ]);
     }
 }

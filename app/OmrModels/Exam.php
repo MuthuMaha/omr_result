@@ -178,8 +178,8 @@ class Exam extends Model
       $Result=DB::table($result_string)->where('test_code_sl_id',$data->exam_id)->where('STUD_ID',$data->STUD_ID)->pluck('Result_String');
      $filedata=ias_model_year_paper($correctans[0]->model_year,$correctans[0]->paper);
      $marked=static::AnswerObtain($data,$correctans,array_filter($filedata[1]));
-     // return $marked;
-     return static::AdvanceAnswer($filedata,$correctans,$marked,$data->subject_id,$Result[0]);
+     // return $filedata[0];
+     return static::AdvanceAnswer($filedata,$correctans,$marked,$data->subject_id,$Result[0],$result_string,$data->exam_id);
     }
     else
     {
@@ -271,7 +271,7 @@ class Exam extends Model
                             'response_code'=>"1",
                             ],"Data"=>$new,"subject_id"=>$data[9],"subject_name"=>$subject_name];
   }
-  public static function AdvanceAnswer($data,$ans,$marked,$id,$result){
+  public static function AdvanceAnswer($data,$ans,$marked,$id,$result,$table,$exam_id){
     // return $data[1];
     $sbi=array();
     $a=0;
@@ -363,6 +363,8 @@ class Exam extends Model
       if(isset($list[strtoupper($sub)]))
       for ($i=1; $i <=count($list[strtoupper($sub)]) ; $i++) 
       {
+        $ob=DB::table($table)->where('test_code_sl_id',$exam_id)->where('STUD_ID',Auth::id())->pluck(strtoupper($sub));
+
         $sd=array_values($list[strtoupper($sub)]['Section'.$i]);
         $new[$i]['Section']='Section'.$i;
         $new[$i]['question_type']=$sd[key($sd)]['question_type'];
@@ -373,7 +375,12 @@ class Exam extends Model
                      ['Login' => [
                             'response_message'=>"success",
                             'response_code'=>"1",
-                            ],"Data"=>$new,'subject_id'=>$sbi,"subject_name"=>array_values($subject_name)];
+                            ],
+                            "Data"=>$new,
+                            'subject_id'=>$sbi,
+                            "subject_name"=>array_values($subject_name),
+                            "mark_obtained"=>$ob[0]."/55",
+                          ];
   }
   public static function AnswerObtain($data,$ans,$type)
   {

@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Http\Request;
+use App\Temployee;
+use Illuminate\Support\Facades\Input;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,6 +21,17 @@ use Illuminate\Http\Request;
 // 	return DB::table('t_student')->limit(20)->get();
 // });
 	/*OMR*/
+	Route::get('/search', function() {	
+		$emp = Temploye::limit('10')->get();
+	    $emp->addToIndex();
+		// Temployee::createIndex($shards = null, $replicas = null);
+
+		// Temployee::putMapping($ignoreConflicts = true);
+
+		// Temployee::addAllToIndex();
+		// return Temployee::searchByQuery(['match' => ['query' => Input::get('query', '')]]);
+
+});
 	Route::post('userLogin', 'AuthController@tokenAuthAttempt');
 	Route::post('uploadResults','AuthController@upload');
 	/*OMR Result Application*/
@@ -42,6 +55,7 @@ use Illuminate\Http\Request;
 		Route::post('notifications','OmrControllers\ResultController@notifications');
 		/*OMR*/
 		Route::get('groups/{subject_id}','OmrControllers\ResultController1@groups');
+		Route::post('search','OmrControllers\ResultController1@search');
 		// Route::get('filter','OmrControllers\BaseController@groups');
 		Route::get('class_years/{group_id}','OmrControllers\ResultController1@class_year_wrt_group');
 		Route::get('streams/{group_id}/{class_id}','OmrControllers\ResultController1@stream_wrt_group_class_year');

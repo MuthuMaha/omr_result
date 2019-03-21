@@ -36,7 +36,7 @@ class Result extends Authenticatable
          $a=[1,2,3,4,56];
 
          //Login with three driver for different login
-        if($data->user_type=="employee")
+        if($data->user_type=="employee" || $data->user_type=="director")
         {
         Auth::attempt([ 'PAYROLL_ID' => $data->get('USERNAME'), 'password' => $data->get('PASSWORD') ]);
         }

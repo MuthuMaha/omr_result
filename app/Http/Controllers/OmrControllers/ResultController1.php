@@ -10,8 +10,10 @@ use App\Http\Resources\Group as GroupResource;
 use App\BaseModels\CourseTrack as course_track;
 use App\BaseModels\Stream;
 use App\BaseModels\Program;
+use App\BaseModels\Student;
 use App\BaseModels\Section;
 use App\OmrModels\Subject;
+use App\Temployee;
 use App\Http\Controllers\Controller;
 use App\OmrModels\section as Examsection;
 use App\Http\Resources\GroupCollection;
@@ -130,6 +132,19 @@ $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
                             "data"=>$data];
 
 
+
+    }
+    public function search(Request $request){
+        if($request->user_type=="employee" || $request->user_type=="director" )
+        $res=Temployee::where('PAYROLL_ID','like','%'.$request->USERID.'%')->select('PAYROLL_ID','NAME')->get();
+        else
+        $res=Student::where('ADM_NO','like','%'.$request->USERID.'%')->select('ADM_NO','NAME')->get();
+        return [
+                     'Login' => [
+                            'response_message'=>"success",
+                            'response_code'=>"1",
+                            ],
+            "Data"=>$res];
 
     }
 }

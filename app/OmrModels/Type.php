@@ -13,7 +13,12 @@ class Type extends Model
 
     public static function teacher_exam_info($data)
     {
+    	if(isset($data->USER_ID))
     	$section=DB::table('IP_Exam_Section')
+			    	->where('EMPLOYEE_ID',$data->USER_ID)
+			    	->pluck('SECTION_ID');   
+		else
+		$section=DB::table('IP_Exam_Section')
 			    	->where('EMPLOYEE_ID',Auth::user()->payroll_id)
 			    	->pluck('SECTION_ID');
 

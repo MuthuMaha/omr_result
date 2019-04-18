@@ -9,6 +9,7 @@ use Auth;
 use App\Http\Requests\LoginValidation;
 use Carbon\Carbon;
 use App\Employee;
+use App\Http\Resources\GroupCollection;
 use App\OmrModels\Parent_details;
 use App\OmrModels\Fcmtoken;
 use App\BaseModels\Student;
@@ -16,6 +17,7 @@ use App\BaseModels\Program;
 use App\BaseModels\StudyClass;
 use App\BaseModels\Campus;
 use App\OmrModels\Tparent;
+use \App\OmrModels\Version;
 use App\Token;
 use App\OmrModels\User;
 use Illuminate\Http\Request;
@@ -34,6 +36,7 @@ class Result extends Authenticatable
          $msg="This is old token";
          $campus="";
          $a=[1,2,3,4,56];
+          $version=Version::orderby('version_number','DESC')->first();
 
          //Login with three driver for different login
         if($data->user_type=="employee" || $data->user_type=="director")
@@ -87,15 +90,32 @@ class Result extends Authenticatable
                     'expiry_time'=>'1',
                     'access_token' => Hash::make($str),
                 ]);
+                if($data->user_type=='employee')
                     return [
                         'Login' => [
                             'response_message'=>"success",
                             'response_code'=>"1",
                             'Token'=>$token->access_token,
+              'Version'=>$version->version_number,
+                            
                             ],
                             'Details'=>$details,
                             'Subject'=>$subject,
                     ];
+                    else
+                       return [
+                        'Login' => [
+                            'response_message'=>"success",
+                            'response_code'=>"1",
+                            'Token'=>$token->access_token,
+              'Version'=>$version->version_number,
+                            
+                            ],
+                            'Details'=>$details,
+                            // 'Subject'=>$subject,
+                            'Group'=>new GroupCollection(DB::table('t_course_group')->get())
+                    ];
+
          
             }
         }
@@ -133,6 +153,8 @@ class Result extends Authenticatable
                             'response_message'=>"success",
                             'response_code'=>"1",
                             'Token'=>$token->access_token,
+              'Version'=>$version->version_number,
+                            
                             ],
                             'Details'=>$details,
                     ];
@@ -177,6 +199,8 @@ class Result extends Authenticatable
                             'response_message'=>"success",
                             'response_code'=>"1",
                             'Token'=>$token->access_token,
+              'Version'=>$version->version_number,
+                            
                             ],
                             'Details'=>$details,
                           
@@ -196,6 +220,8 @@ class Result extends Authenticatable
                             'response_message'=>"success",
                             'response_code'=>"1",
                         'Token'=>$token[0],
+              'Version'=>$version->version_number,
+                        
                             ],
                         'Details'=>$details,
                         'Subject'=>$subject,
@@ -207,6 +233,8 @@ class Result extends Authenticatable
                             'response_message'=>"success",
                             'response_code'=>"1",
                         'Token'=>$token[0],
+              'Version'=>$version->version_number,
+                        
                             ],
                         'Details'=>$details, 
                     ];
@@ -288,6 +316,130 @@ class Result extends Authenticatable
     //    return $result;
     return true;
    }
+   public static function modelist($data)
+   {
+    $res=DB::table('0_test_modes')->where('test_mode_name','<>','')->select('test_mode_name','test_mode_id')->get();
+   return ['Login' => [
+                            'response_message'=>"success",
+                            'response_code'=>"1",
+                            ],
+                 "Data"=>$res
+                ];
 
+   }
+   public static function mdexamlist($data)
+   {
+    if(isset($data->date))
+      $date=$data->date;
+    else
+      $date=date('Y-m');
+    $c=DB::table('result_application_blockcount')->where('API','mdexamlist')->pluck('Block_Count')[0];
+    $r=array();
+    $res=DB::table('1_exam_admin_create_exam')
+            ->where('result_generated1_no0',1)
+            ->select('sl','test_code','start_date','max_marks','mode');
+            if(isset($data->mode_id))
+            $res->where('mode',$data->mode_id);
+          if(isset($data->test_type))
+            $res->where('test_type',$data->test_type);
+          
+            $res->where('start_date','like',$date.'%');
+           
+
+            $res=$res->paginate($c);
+            foreach ($res as $key => $value) {
+             $b=DB::table('0_test_modes')->where('test_mode_id',$value->mode)->get();
+             $r[$key]=DB::table($b[0]->marks_upload_final_table_name)
+                   ->where('test_code_sl_id',$value->sl)
+                   ->select(DB::raw('SUM(TOTAL) as total,COUNT(sl) as count'))->get()[0];
+              $r[$key]->max_marks=array_sum(explode(',',$value->max_marks));
+              $r[$key]->total_marks=$r[$key]->max_marks*$r[$key]->count;
+              if(isset($r[$key]->total) && isset($r[$key]->total_marks))
+              $r[$key]->total_percentage=($r[$key]->total/$r[$key]->total_marks)*100;
+            else
+              $r[$key]->total_percentage=0;
+
+            $r[$key]->sl=$value->sl;
+            $r[$key]->test_code=$value->test_code;
+            $r[$key]->start_date=$value->start_date;
+
+            }
+            
+$date=date('Y-M',strtotime($date));
+   return ['Login' => [
+                            'response_message'=>"success",
+                            'response_code'=>"1",
+                            ],
+                 "Data"=>$r,
+                 "Total_page"=>$res->lastPage(),
+                 "Exam_date"=>$date,
+                 "Block_Count"=>$c
+                ];
+
+   }
+   
+   public static function md_adroitlist($data)
+   {
+     $c=DB::table('result_application_blockcount')->where('API','md_adroitlist')->pluck('Block_Count')[0];
+    
+  //   if($data->page!=1)
+  //   $page=($data->page-1)*10;
+  // else
+  //   $page=0;
+    $res=Exam::where('sl',$data->exam_id)->select('sl','test_code','mode')->get();
+    $res1=DB::table('0_test_modes')->where('test_mode_id',$res[0]->mode)->get();
+    // $res2=DB::table($res1[0]->marks_upload_final_table_name)->orderBy('ALL_INDIA_RANK','ASC')->where('test_code_sl_id',$data->exam_id)->where('ALL_INDIA_RANK','>',$page)->limit('10')->get();
+    $res2=DB::table($res1[0]->marks_upload_final_table_name)
+              ->join('scaitsqb.t_student_bio as s','s.ADM_NO','=',$res1[0]->marks_upload_final_table_name.'.STUD_ID')
+              ->join('1_exam_admin_create_exam as e','e.sl','=',$res1[0]->marks_upload_final_table_name.'.test_code_sl_id')
+              // ->join('t_campus as c','c.CAMPUS_ID','=',$res1[0]->marks_upload_final_table_name.'.this_college_id')
+                ->where('test_code_sl_id',$data->exam_id);
+
+    if(isset($data->CAMPUS_ID))
+    $res2->where('this_college_id',$data->CAMPUS_ID);
+    if(isset($data->group_id))
+    $res2->where('GROUP_ID',$data->group_id);
+    if(isset($data->class_id))
+    $res2->where('CLASS_ID',$data->class_id);
+    if(isset($data->stream_id))
+    $res2->where('STREAM_ID',$data->stream_id);
+    if(isset($data->program_id))
+    $res2->where('PROGRAM_ID',$data->program_id);
+
+
+    $res2->orderBy('ALL_INDIA_RANK','ASC');
+    $res2->select('e.sl','test_code','TOTAL','STUD_ID','PROGRAM_RANK','STREAM_RANK','SEC_RANK','CAMP_RANK','CITY_RANK','DISTRICT_RANK','STATE_RANK','ALL_INDIA_RANK','this_college_id','CAMPUS_NAME','NAME','max_marks');
+
+    $res2=$res2->paginate($c);
+    foreach ($res2 as $key => $value) {
+      $m=array_sum(explode(',',$value->max_marks));
+      $res2[$key]->total_percentage=number_format(($value->TOTAL/$m)*100);
+      $res2[$key]->DISTOTAL=$value->TOTAL.'/'.$m;
+    }
+    // $res2[]=[
+    //                 'response_message'=>"success",
+    //                 'response_code'=>"1",
+    //                 ];
+    // $res2['data']=array_values((array)$res2['data']);
+
+     // return [,
+$custom = collect(['Login' => [
+                'response_message'=>"success",
+                'response_code'=>"1",
+                ]]);
+
+$data = $custom->merge($res2);
+
+// return response()->json($data);
+    // return response()->json([
+    // 'books' => $res2,
+    // 'Login' => [
+    //             'response_message'=>"success",
+    //             'response_code'=>"1",
+    //             ],
+    //   ]);
+    return $data;
+
+   }
    
 }

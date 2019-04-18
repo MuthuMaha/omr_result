@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use App\Temployee;
+use App\OmrModels\Subject;
 use Illuminate\Support\Facades\Input;
 
 /*
@@ -12,8 +13,10 @@ use Illuminate\Support\Facades\Input;
 | Here is where you can register API routes for your application. These
 | routes are loaded by the RouteServiceProvider within a group which
 | is assigned the "api" middleware group. Enjoy building your API!
+|150
 |
 */
+
 
 // use App\OmrModels\Employee;
 // use App\Http\Resources\Employee as UserResource;
@@ -22,16 +25,21 @@ use Illuminate\Support\Facades\Input;
 // });
 	/*OMR*/
 	Route::get('/search', function() {	
-		$emp = Temploye::limit('10')->get();
-	    $emp->addToIndex();
-		// Temployee::createIndex($shards = null, $replicas = null);
+		// $emp = Temployee::limit('9146')->get();
+		// // $emp->createIndex($shards = null, $replicas = null);
 
-		// Temployee::putMapping($ignoreConflicts = true);
-
+		// // $emp->putMapping($ignoreConflicts = true);
+	 //    $emp->addToIndex();
+	     // $all_books = Temployee::searchByQuery(array('match' => array('EMPLOYEE_ID' => '9140')));
+	     $all_books = Temployee::where('EMPLOYEE_ID','9140')->get();
+   		 return $all_books->all();
+ 	// $emp = Temployee::search('GURRAPU SALA');
+  //   return $emp->totalHits();
 		// Temployee::addAllToIndex();
-		// return Temployee::searchByQuery(['match' => ['query' => Input::get('query', '')]]);
+		// return $emp->searchByQuery(['match' => ['query' => '1']]);
 
 });
+	Route::get('/getDetails', 'GetComponentDetailController@getData');
 	Route::post('userLogin', 'AuthController@tokenAuthAttempt');
 	Route::post('uploadResults','AuthController@upload');
 	/*OMR Result Application*/
@@ -41,7 +49,19 @@ use Illuminate\Support\Facades\Input;
 	Route::group([ 'middleware' => 'auth:token' ], function () 
 	{	
 		/*OMR Result Application*/	
+		Route::post('showProfile','redisController@showProfile');
 		Route::post('total_percentage','OmrControllers\ResultController@total_percentage');
+		Route::post('campus','OmrControllers\ResultController@campus');
+		Route::post('modelist','OmrControllers\ResultController@modelist');
+		Route::post('mdexamlist','OmrControllers\ResultController@mdexamlist');
+		Route::post('campuslist','OmrControllers\ResultController@campuslist');
+		Route::post('employeelist','OmrControllers\ResultController@employeelist');
+		Route::post('employeecombination','OmrControllers\ResultController@employeecombination');
+		Route::post('details','OmrControllers\ResultController@details');
+		Route::post('md_sectionlist','OmrControllers\ResultController@campus');
+		Route::post('md_studlist','OmrControllers\ResultController@campus');
+		Route::post('md_adroitlist','OmrControllers\ResultController@md_adroitlist');
+		Route::post('md_total_percentage','OmrControllers\ResultController@md_total_percentage');
 		Route::get('subject/{exam_id}/{STUD_ID}','OmrControllers\ResultController@subject');
 		Route::post('answer_details','OmrControllers\ResultController@AnswerDetails');
 		Route::post('exam_info','OmrControllers\ResultController@exam_info');
@@ -55,7 +75,10 @@ use Illuminate\Support\Facades\Input;
 		Route::post('notifications','OmrControllers\ResultController@notifications');
 		/*OMR*/
 		Route::get('groups/{subject_id}','OmrControllers\ResultController1@groups');
+		Route::get('groups','OmrControllers\ResultController1@groups');
 		Route::post('search','OmrControllers\ResultController1@search');
+		Route::post('md_studentlist','OmrControllers\ResultController1@md_studentlist');
+		Route::post('md_employeelist','OmrControllers\ResultController1@md_employeelist');
 		// Route::get('filter','OmrControllers\BaseController@groups');
 		Route::get('class_years/{group_id}','OmrControllers\ResultController1@class_year_wrt_group');
 		Route::get('streams/{group_id}/{class_id}','OmrControllers\ResultController1@stream_wrt_group_class_year');

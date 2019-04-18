@@ -52,6 +52,7 @@ $group=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECT
 $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
         if(count($group)!=0)
         $query->whereIn('GROUP_ID',$group);
+    if(isset($request->subject_id))
     $query->orwhere('GROUP_ID','5');
         $query=$query->get();
         $data=new GroupCollection($query);
@@ -120,7 +121,7 @@ $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
         // where('STREAM_ID', '=',$stream_id);
         //     ->where('CLASS_ID',$class_id);
         // if(count($program))
-        $query=Program::whereIn('PROGRAM_ID',$program)->orwhere('PROGRAM_ID','1');
+        $query=Program::where('CLASS_ID',$class_id)->where('STREAM_ID',$stream_id);
         $query=$query->get();
         $data=new ProgramCollection($query); 
         return [
@@ -136,9 +137,13 @@ $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
     }
     public function search(Request $request){
         if($request->user_type=="employee" || $request->user_type=="director" )
-        $res=Temployee::where('PAYROLL_ID','like','%'.$request->USERID.'%')->select('PAYROLL_ID','NAME')->get();
+        $res=Temployee::where('PAYROLL_ID','like','%'.$request->USERID.'%')
+                ->where('NAME','<>','')
+                ->select('PAYROLL_ID as USERID','NAME')->get();
         else
-        $res=Student::where('ADM_NO','like','%'.$request->USERID.'%')->select('ADM_NO','NAME')->get();
+        $res=Student::where('ADM_NO','like','%'.$request->USERID.'%')
+                ->where('NAME','<>','')    
+                ->select('ADM_NO as USERID','NAME')->get();
         return [
                      'Login' => [
                             'response_message'=>"success",
@@ -146,5 +151,37 @@ $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
                             ],
             "Data"=>$res];
 
+    }
+    public function md_studentlist(Request $request)
+    {
+        $res=Student::where('GROUP_ID',$request->group_id)
+                    ->where('CLASS_ID',$request->class_id)
+                   ->where('STREAM_ID',$request->stream_id)
+                  ->where('PROGRAM_ID',$request->program_id)
+                  ->select('ADM_NO','NAME','CAMPUS_NAME')
+                    ->get();
+       return [
+                     'Login' => [
+                            'response_message'=>"success",
+                            'response_code'=>"1",
+                            ],
+            "Data"=>$res];
+    }
+    public function md_employeelist(Request $request)
+    {
+        $res=Temployee::
+        join('IP_Exam_Section as ies','ies.EMPLOYEE_ID','=','t_employee.PAYROLL_ID')
+        ->join('0_subjects as s','s.subject_id','=','ies.SUBJECT_ID')
+                      ->where('CAMPUS_ID',$request->CAMPUS_ID)
+                      ->select('PAYROLL_ID','NAME','DESIGNATION',DB::raw('group_concat(left(s.subject_name,3)) as Subject'))
+                      ->groupBy('t_employee.PAYROLL_ID','t_employee.NAME','t_employee.DESIGNATION')
+                      ->distinct('PAYROLL_ID','NAME','DESIGNATION')
+                      ->get();
+       return [
+                     'Login' => [
+                            'response_message'=>"success",
+                            'response_code'=>"1",
+                            ],
+            "Data"=>$res];
     }
 }

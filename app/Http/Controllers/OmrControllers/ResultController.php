@@ -1,17 +1,24 @@
 <?php
 
 namespace App\Http\Controllers\OmrControllers;
-
+use DB;
 use App\OmrModels\Result;
 use App\OmrModels\Exam;
 use App\OmrModels\Type;
 use App\OmrModels\Modesyear;
 use App\OmrModels\Subject;
+use App\BaseModels\Student;
+use App\BaseModels\Campus;
+use App\BaseModels\Program;
+use App\BaseModels\StudyClass;
 use App\OmrModels\Fcmtoken;
 use App\Http\Requests\LoginResult;
 use App\Http\Requests\Totalpercentage;
 use App\Http\Requests\Examlist;
-
+use App\Employee;
+// use App\BaseModels\Student;
+use App\OmrModels\Tparent;
+use Auth;
 use  File;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -23,7 +30,35 @@ class ResultController extends Controller
     $res=Result::login($request);
       return $res;      
     }
+    public function modelist(Request $request)
+    {
+    $res=Result::modelist($request);
+      return $res;      
+    }
+    public function md_adroitlist(Request $request)
+    {
+    $res=Result::md_adroitlist($request);
+      return $res;      
+    }
+    public function mdexamlist(Request $request)
+    {
+    $res=Result::mdexamlist($request);
+      return $res;      
+    }
     public function total_percentage(Request $request){
+        if($request->user_type=='student' || $request->user_type=='parent' ){
+        $res=Exam::type($request);
+        }
+        else{
+            $change="p";
+        $res=Subject::teacher_percentage($request,$change);
+        }
+
+        return $res;
+    }
+    public function md_total_percentage(Request $request){
+        // $url = route('mdt', ['STUD_ID' => '178041343','user_type' => 'student']);
+        // return $url;
         if($request->user_type=='student' || $request->user_type=='parent' ){
         $res=Exam::type($request);
         }
@@ -75,13 +110,16 @@ class ResultController extends Controller
         return $res;
     }
     public function subject(Request $request){
+        if(isset(Exam::AnswerDetails($request)['subject_name']))
       $res=Exam::AnswerDetails($request)['subject_name'];
+  if(isset(Exam::AnswerDetails($request)['subject_id']))
       $res1=Exam::AnswerDetails($request)['subject_id'];
+  if(isset($res))
       foreach ($res as $key => $value) {
           $arr[$key]['subject_id']=$res1[$key];
           $arr[$key]['subject_name']=$value;
       }
-
+if(isset($arr))
         // return $res;
         return ['Login' => [
                             'response_message'=>"success",
@@ -89,10 +127,206 @@ class ResultController extends Controller
                             ],
                  "Data"=>$arr
                 ];
+                else
+                    return ['Login' => [
+                            'response_message'=>".iit/.dat file not uploaded yet",
+                            'response_code'=>"1",
+                            ],
+                 "Data"=>array()
+                ];
+
     }  
     public function sendmessage(Request $request){
         $res=Fcmtoken::sendmessage($request);
         return $res;
+
+    }
+    public function campus(Request $request){
+        $res=Student::studlist($request);
+        return ['Login' => [
+                            'response_message'=>"success",
+                            'response_code'=>"1",
+                            ],
+                 "data"=>$res
+                ];
+
+    }
+    public function campuslist(Request $request){
+        $res=Campus::select("CAMPUS_ID","CAMPUS_NAME")->get();
+        return ['Login' => [
+                            'response_message'=>"success",
+                            'response_code'=>"1",
+                            ],
+                 "data"=>$res
+                ];
+
+    }
+    public function employeelist(Request $request){
+        $res=DB::table('t_employee')
+        ->where('CAMPUS_ID',$request->CAMPUS_ID)
+        ->where('NAME','<>','')
+        ->select("PAYROLL_ID","NAME")->get();
+        return ['Login' => [
+                            'response_message'=>"success",
+                            'response_code'=>"1",
+                            ],
+                 "data"=>$res
+                ];
+
+    }
+    public function employeecombination(Request $request)
+    {
+       
+        $employee_id=$request->USER_ID;
+        $campus_id=$request->CAMPUS_ID;
+            $output=DB::table('ip_exam_section as ie')
+                    ->join('t_employee as em','ie.EMPLOYEE_ID','=','em.payroll_id')
+                    ->join('t_college_section as tc','ie.SECTION_ID','=','tc.SECTION_ID')
+                    ->join('t_course_track as eg','eg.COURSE_TRACK_ID','tc.COURSE_TRACK_ID')
+                    ->join('t_study_class as sc','sc.CLASS_ID','=','eg.CLASS_ID')
+                    ->join('t_stream as st','st.STREAM_ID','=','eg.STREAM_ID')
+                    ->join('t_program_name as pn','pn.PROGRAM_ID','=','tc.PROGRAM_ID')
+                    ->join('0_subjects as sb','sb.subject_id','=','ie.subject_id')
+                    ->distinct('eg.GROUP_ID','eg.STREAM_ID','eg.CLASS_ID','tc.PROGRAM_ID')
+                    ->select('eg.GROUP_NAME','st.STREAM_NAME','sc.CLASS_NAME','pn.PROGRAM_NAME','sb.subject_name','eg.GROUP_ID','eg.STREAM_ID','eg.CLASS_ID','tc.PROGRAM_ID','ie.subject_id',"PAYROLL_ID","NAME","DESIGNATION");
+
+                    if(isset($campus_id))
+                    $output->where('em.CAMPUS_ID',$request->CAMPUS_ID);
+                    if(isset($employee_id))
+                    $output->where('ie.EMPLOYEE_ID',$request->USER_ID);
+                    $output=$output->get();
+
+                    foreach ($output as $key => $value) {
+                      $outpu[$value->PAYROLL_ID]['NAME']=$value->NAME;
+                      $outpu[$value->PAYROLL_ID]['PAYROLL_ID']=$value->PAYROLL_ID;
+                      $outpu[$value->PAYROLL_ID]['DESIGNATION']=$value->DESIGNATION;
+                      $outpu[$value->PAYROLL_ID]['Details'][]=$value;
+                    }
+                    if(isset($outpu))
+        return ['Login' => [
+                            'response_message'=>"success",
+                            'response_code'=>"1",
+                            ],
+                 "data"=>array_values($outpu)
+                ];
+                else
+                    return ['Login'=>[
+                        'response_message'=>"No data found",
+                        'response_code'=>0
+                    ],
+                    'data'=>array()
+                ];
+
+    }
+    public function details(Request $request)
+    {
+        if($request->user_type=='employee'){
+             $client = Employee::
+                                join('t_campus as tc','employees.CAMPUS_ID','=','tc.CAMPUS_ID')
+                                ->join('t_employee as te','te.PAYROLL_ID','=','employees.payroll_id')
+                              ->where('employees.payroll_id',$request->USER_ID)->get();
+            if(isset($client[0])){
+                              // return $client;
+                $campus=$client[0]->CAMPUS_NAME;
+
+                $details=[
+                    'USER_NAME'=>ucfirst(strtolower($client[0]->USER_NAME)),
+                    'CAMPUS_NAME'=>ucfirst(strtolower($campus)),
+                    'SURNAME'=>ucfirst(strtolower($client[0]->SURNAME)),
+                    'NAME'=>ucfirst(strtolower($client[0]->NAME)),
+                    'USER'=>'EMPLOYEE',
+                    'DEPARTMENT'=>$client[0]->SUBJECT,
+                    'DESIGNATION'=>$client[0]->DESIGNATION,
+                    'CAMPUS_ID'=>$client[0]->CAMPUS_ID
+                          ];
+            return [
+                        'Login' => [
+                            'response_message'=>"success",
+                            'response_code'=>"1",
+                            ],
+                            'Details'=>$details
+                        ];
+                    }
+                    else{
+                        return  [
+                        'Login' => [
+                            'response_message'=>"No Record Found",
+                            'response_code'=>"0",
+                            ],];
+                    }
+
+        }
+        elseif($request->user_type=='student'){
+            $stud=Student::where('ADM_NO',$request->USER_ID)->get();
+            if(isset($stud[0])){
+            $campus=Campus::where('CAMPUS_ID',$stud[0]->CAMPUS_ID)->pluck('CAMPUS_NAME');
+                $details=[
+                    'NAME'=>ucfirst(strtolower($stud[0]->NAME)),
+                    'USER_NAME'=>ucfirst(strtolower($stud[0]->USER_NAME)),
+                    'SURNAME'=>ucfirst(strtolower($stud[0]->SURNAME)),
+                    'USER'=>'STUDENT',
+                    'CAMPUS_NAME'=>ucfirst(strtolower($campus[0])),
+                    'GROUP'=>$stud[0]->GROP,
+                    // 'SUBJECT'=>Auth::guard('t_student')->user()->SUBJECT,
+                    'PROGRAM_NAME'=>Program::where('PROGRAM_ID',$stud[0]->PROGRAM_ID)->pluck('PROGRAM_NAME')[0],
+                    'CLASS_NAME'=>StudyClass::where('CLASS_ID',$stud[0]->CLASS_ID)->pluck('CLASS_NAME')[0],
+                    'CAMPUS_ID'=>$stud[0]->CAMPUS_ID,
+                    'ACADEMIC_YEAR'=>$stud[0]->ACADEMIC_YEAR,
+                    'YEAR'=>$stud[0]->CLASS_ID
+                          ];
+                          return [
+                        'Login' => [
+                            'response_message'=>"success",
+                            'response_code'=>"1",
+                            ],
+                            'Details'=>$details
+                        ];
+                    }
+                    else{
+                        return  [
+                        'Login' => [
+                            'response_message'=>"No Record Found",
+                            'response_code'=>"0",
+                            ],];
+                    }
+        }
+        else{
+            $stud=Student::where('ADM_NO',$request->USER_ID)->get();
+            if(isset($stud[0])){
+            $campus=Campus::where('CAMPUS_ID',$stud[0]->CAMPUS_ID)->pluck('CAMPUS_NAME');
+            if(count($campus)==0)
+               return [
+                        'Login' => [
+                            'response_message'=>"error username or password wrong",
+                            'response_code'=>"0"
+                           ],
+                    ];
+             $details=[
+                    'NAME'=>ucfirst(strtolower($stud[0]->NAME)),
+                    'USER'=>'PARENT',
+                    'PROGRAM_NAME'=>Program::where('PROGRAM_ID',$stud[0]->PROGRAM_ID)->pluck('PROGRAM_NAME')[0],
+                    'CLASS_NAME'=>StudyClass::where('CLASS_ID',$stud[0]->CLASS_ID)->pluck('CLASS_NAME')[0],
+                    'CAMPUS_NAME'=>ucfirst(strtolower($campus[0])),
+                    'STUDENT'=>ucfirst(strtolower($stud[0]->NAME)),
+                    'CAMPUS_ID'=>$stud[0]->CAMPUS_ID,
+                    'YEAR'=>$stud[0]->CLASS_ID
+                          ]; 
+                          return [
+                        'Login' => [
+                            'response_message'=>"success",
+                            'response_code'=>"1",
+                            ],
+                            'Details'=>$details
+                        ];
+                    }else{
+                        return  [
+                        'Login' => [
+                            'response_message'=>"No Record Found",
+                            'response_code'=>"0",
+                            ],];
+                    }
+        }
+        
 
     }
 }

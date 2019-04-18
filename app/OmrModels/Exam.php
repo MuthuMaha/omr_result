@@ -2,6 +2,7 @@
 
 namespace App\OmrModels;
 use App\BaseModels\Campus;
+use App\BaseModels\Student;
 use Auth;
 use File;
 use Illuminate\Http\Request;
@@ -16,7 +17,11 @@ class Exam extends Model
   public static function total($data){
     // sleep(10);
  // return \;
-
+$stud1=Student::where('ADM_NO',$data->USER_ID)->select('ADM_NO','CAMPUS_ID','CAMPUS_NAME','PROGRAM_NAME','GROP','NAME')->get();
+if(isset($stud[0])){
+$ADM_NO=$stud1[0]->ADM_NO;
+$CAMPUS_ID=$stud1[0]->CAMPUS_ID;
+}
      if(isset($data->date))
         $date=$data->date;
         else
@@ -26,6 +31,9 @@ class Exam extends Model
     $calculation="";
     $marklist=array(); 
     $stud=Campus::whereRaw('CAMPUS_ID ='.Auth::user()->CAMPUS_ID)->select('STATE_ID')
+            ->get();
+    if($stud[0]=='' && $CAMPUS_ID!="")
+       $stud=Campus::whereRaw('CAMPUS_ID ='.$CAMPUS_ID)->select('STATE_ID')
             ->get();
             //List the exam which is based on STATE_ID of the student
     $exam=static::whereRaw('FIND_IN_SET(?,state_id)', $stud[0]->STATE_ID)
@@ -54,9 +62,14 @@ class Exam extends Model
       //Fetch record from that table name
       $exam_data=DB::table($subject_marks[0]->marks_upload_final_table_name)
       ->join('1_exam_admin_create_exam as e','e.sl','=',$subject_marks[0]->marks_upload_final_table_name.'.test_code_sl_id')
-            ->whereRaw('STUD_ID ="'.Auth::id().'"')
             ->whereRaw('test_code_sl_id ="'.$value->sl.'"')
             ->select('test_code_sl_id','STUD_ID','TOTAL','PROGRAM_RANK','STREAM_RANK','SEC_RANK','CAMP_RANK','CITY_RANK','DISTRICT_RANK','STATE_RANK','ALL_INDIA_RANK',DB::raw("DATE_FORMAT(e.start_date,'%d-%m-%Y') as start_date"),'e.test_code','e.max_marks');
+            if(isset($data->USER_ID))
+            $exam_data->whereRaw('STUD_ID ="'.$data->USER_ID.'"');
+            else
+            $exam_data->whereRaw('STUD_ID ="'.Auth::id().'"');
+            // $exam_data->whereRaw('STUD_ID ="178041343"');
+
             if(\Request::segment(2)=="examlist")
              $exam_data->where('start_date','like',$date.'%');
 
@@ -92,7 +105,7 @@ class Exam extends Model
         if(empty($res_key))
           return [
                         'Mode' =>['Login'=> [
-                            'response_message'=>"Student Record Not Found",
+                            'response_message'=>"No Record Found",
                             'response_code'=>"1"
                            ],"data"=>array()],
                              'Marklist' =>['Login'=> [
@@ -104,7 +117,10 @@ class Exam extends Model
         "Mode"=>['Login' => [
                             'response_message'=>"success",
                             'response_code'=>"1",
-                            ],"data"=>$res_key],
+                            ],
+                            "data"=>$res_key
+                            ,
+                          ],
         "Marklist"=>['Login' => [
                             'response_message'=>"success",
                             'response_code'=>"1",
@@ -162,7 +178,7 @@ class Exam extends Model
     }
     $type="";
    $correctans=static::where('sl',$data->exam_id)->select('key_answer_file_long_string as CorrectAnswer','model_year','paper','omr_scanning_type','to_from_range','subject_string_final','sl','test_code','mode')->get();
-   if(!isset($correctans[0]))
+   if(sizeof($correctans)==0)
     return  [
               'Login' => [
                             'response_message'=>"Send correct exam_id",
@@ -179,16 +195,25 @@ class Exam extends Model
      $filedata=ias_model_year_paper($correctans[0]->model_year,$correctans[0]->paper);
      $marked=static::AnswerObtain($data,$correctans,array_filter($filedata[1]));
      // return $filedata[0];
-     return static::AdvanceAnswer($filedata,$correctans,$marked,$data->subject_id,$Result[0],$result_string,$data->exam_id);
+     return static::AdvanceAnswer($filedata,$correctans,$marked,$data->subject_id,$Result[0],$result_string,$data->exam_id,$data->STUD_ID);
     }
     else
     {
+      if(isset($correctans[0]))
       $result_string=Mode::where('test_mode_id',$correctans[0]->mode)->pluck('marks_upload_final_table_name')[0];
-    $Result=DB::table($result_string)->where('test_code_sl_id',$data->exam_id)->where('STUD_ID',Auth::user()->ADM_NO)->pluck('Result_String');
-    if(!isset($Result))
+    
+    if(isset($data->STUD_ID))
       $Result=DB::table($result_string)->where('test_code_sl_id',$data->exam_id)->where('STUD_ID',$data->STUD_ID)->pluck('Result_String');
+    else
+    $Result=DB::table($result_string)->where('test_code_sl_id',$data->exam_id)->where('STUD_ID',Auth::user()->ADM_NO)->pluck('Result_String');
      $marked=static::AnswerObtain($data,$correctans,$type);
-
+     if(sizeof($marked)==0)
+       return  [
+              'Login' => [
+                            'response_message'=>"Send correct exam_id",
+                            'response_code'=>"0",
+                            ]
+            ];
       $subj=array();
 
       $filedata[6]=$correctans[0]->to_from_range;
@@ -199,12 +224,19 @@ class Exam extends Model
       }
       $filedata[0]=$subj;
       $filedata[9]=explode(',',$correctans[0]->subject_string_final);
+    if(sizeof($Result)==0)
+     return  [
+              'Login' => [
+                            'response_message'=>"No data found",
+                            'response_code'=>"0",
+                            ]
+            ];
 
-       return static::NonAdvanceAnswer($filedata,$correctans,$marked,$data->subject_id,$Result[0]);
+       return static::NonAdvanceAnswer($filedata,$correctans,$marked,$data->subject_id,$Result[0],$result_string,$data->exam_id,$data->STUD_ID);
     }
 
   }
-  public static function NonAdvanceAnswer($data,$ans,$marked,$id,$result){
+  public static function NonAdvanceAnswer($data,$ans,$marked,$id,$result,$table,$exam_id,$STUD_ID){
     $result=str_split($result);
     // return $result;
     $sl=$ans[0]->sl;
@@ -226,7 +258,8 @@ class Exam extends Model
       return ['Login' => [
                             'response_message'=>"No record found",
                             'response_code'=>"0",
-                            ]];
+                            ],
+                            'data'=>array()];
     
     for ($key=0; $key<=end($b3)-1; $key++) 
     { 
@@ -259,19 +292,37 @@ class Exam extends Model
       if(isset($list[$sub]))
       for ($i=1; $i <=1 ; $i++) 
       {
+            $ob=DB::table($table)
+                  ->join('1_exam_admin_create_exam as e','e.sl',$table.'.test_code_sl_id')
+                  ->where('test_code_sl_id',$exam_id)
+                  ->where('STUD_ID',Auth::id())
+                  ->select(strtoupper($sub),'max_marks')->get();
+        if(!isset($ob[0]))
+          $ob=DB::table($table)
+                  ->join('1_exam_admin_create_exam as e','e.sl',$table.'.test_code_sl_id')        
+                  ->where('test_code_sl_id',$exam_id)
+                  ->where('STUD_ID',$STUD_ID)
+                  ->select(strtoupper($sub),'max_marks')->get();
         $new[$i]['Section']='Section'.$i;
         $new[$i]['question_type']="";
         $new[$i]['Answer']=array_values($list[$sub]);
       }
       $new=array_values($new);
+
+      $new=array_values($new);
+      $dr=array_combine($subject_name, explode(',',$ob[0]->max_marks));
       // $sb=array_merge($ans[0]->subject_string_final,$subject_name);
     return 
                      ['Login' => [
                             'response_message'=>"success",
                             'response_code'=>"1",
-                            ],"Data"=>$new,"subject_id"=>$data[9],"subject_name"=>$subject_name];
+                            ],"Data"=>$new,
+                            "subject_id"=>$data[9],
+                            "subject_name"=>$subject_name,
+                            "mark_obtained"=>$ob[0]->{strtoupper($sub)}."/".$dr[$sub],
+                          ];
   }
-  public static function AdvanceAnswer($data,$ans,$marked,$id,$result,$table,$exam_id){
+  public static function AdvanceAnswer($data,$ans,$marked,$id,$result,$table,$exam_id,$STUD_ID){
     // return $data[1];
     $sbi=array();
     $a=0;
@@ -295,7 +346,8 @@ class Exam extends Model
       return ['Login' => [
                             'response_message'=>"No record found",
                             'response_code'=>"0",
-                            ]];
+                            ],
+                            'data'=>array(),];
     $ch=0;
     foreach ($section_list as $key => $value) 
     {
@@ -363,7 +415,17 @@ class Exam extends Model
       if(isset($list[strtoupper($sub)]))
       for ($i=1; $i <=count($list[strtoupper($sub)]) ; $i++) 
       {
-        $ob=DB::table($table)->where('test_code_sl_id',$exam_id)->where('STUD_ID',Auth::id())->pluck(strtoupper($sub));
+          $ob=DB::table($table)
+                  ->join('1_exam_admin_create_exam as e','e.sl',$table.'.test_code_sl_id')
+                  ->where('test_code_sl_id',$exam_id)
+                  ->where('STUD_ID',Auth::id())
+                  ->select(strtoupper($sub),'max_marks')->get();
+        if(!isset($ob[0]))
+          $ob=DB::table($table)
+                  ->join('1_exam_admin_create_exam as e','e.sl',$table.'.test_code_sl_id')        
+                  ->where('test_code_sl_id',$exam_id)
+                  ->where('STUD_ID',$STUD_ID)
+                  ->select(strtoupper($sub),'max_marks')->get();
 
         $sd=array_values($list[strtoupper($sub)]['Section'.$i]);
         $new[$i]['Section']='Section'.$i;
@@ -371,6 +433,7 @@ class Exam extends Model
         $new[$i]['Answer']=$sd;
       }
       $new=array_values($new);
+      $dr=array_combine($subject_name, explode(',',$ob[0]->max_marks));
       return 
                      ['Login' => [
                             'response_message'=>"success",
@@ -379,11 +442,12 @@ class Exam extends Model
                             "Data"=>$new,
                             'subject_id'=>$sbi,
                             "subject_name"=>array_values($subject_name),
-                            "mark_obtained"=>$ob[0]."/55",
+                            "mark_obtained"=>$ob[0]->{strtoupper($sub)}."/".$dr[strtoupper($sub)],
                           ];
   }
   public static function AnswerObtain($data,$ans,$type)
   {
+    $stud=Student::where('ADM_NO',$data->STUD_ID)->get();
     $answer1=array();
       $ad=0;
       $ob=array();
@@ -394,6 +458,9 @@ class Exam extends Model
     if($ans[0]->omr_scanning_type=="advanced")
     {
     $path='/var/www/html/sri_chaitanya/College/3_view_created_exam/uploads/'.$ans[0]->sl.'/final/'.Auth::user()->CAMPUS_ID.'.iit';
+    if(isset($data->STUD_ID))
+       $path='/var/www/html/sri_chaitanya/College/3_view_created_exam/uploads/'.$ans[0]->sl.'/final/'.$stud[0]->CAMPUS_ID.'.iit';
+
     $astring=static::advanced($path,$ans[0]->sl,$data);
 
      $answer=explode(',', $astring['Line']);
@@ -404,6 +471,8 @@ class Exam extends Model
     else
     {
     $path='/var/www/html/sri_chaitanya/College/3_view_created_exam/uploads/'.$ans[0]->sl.'/final/'.Auth::user()->CAMPUS_ID.'.dat';
+    if(isset($data->STUD_ID))
+        $path='/var/www/html/sri_chaitanya/College/3_view_created_exam/uploads/'.$ans[0]->sl.'/final/'.$stud[0]->CAMPUS_ID.'.dat';
     $astring=static::nonadvanced($path,$ans[0]->sl,$data);
      if(count($astring))
      $answer1=explode('   ', $astring['Line']);
@@ -534,9 +603,10 @@ foreach ($lines as $line_num => $line)
 
   //NON ADVANCED--------------------------
 public static function nonadvanced($filename,$sl,$data){
-
-  $lines = file($filename);
-
+if(!File::exists($filename))
+  return ["Line"=>"file not found"];
+else
+$lines = file($filename);
 $line_count=0;
 
 

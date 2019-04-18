@@ -3,6 +3,7 @@
 namespace App\OmrModels;
 use Auth;
 use DB;
+use App\Temployee;
 
 use Illuminate\Database\Eloquent\Model;
 include_once($_SERVER['DOCUMENT_ROOT'].'/sri_chaitanya/Exam_Admin/3_view_created_exam/z_ias_format.php');
@@ -13,6 +14,12 @@ class Subject extends Model
   public $timestamps=false;
 
     public static function teacher_percentage($data,$change){
+      $emp=Temployee::
+                  join('t_campus as tc','tc.CAMPUS_ID','=','t_employee.CAMPUS_ID')
+                  ->where('PAYROLL_ID',$data->USER_ID)
+                  ->select('USER_NAME','DESIGNATION','PAYROLL_ID','tc.CAMPUS_ID','CAMPUS_NAME')
+                  ->get();
+      // return $emp;
         $studentlist=array();
         $studentlist1=array();
         $output1=array();
@@ -25,18 +32,24 @@ class Subject extends Model
         $program_id=$data->program_id;
         $subject_id=$data->subject_id;
         $employee_id=Auth::user()->payroll_id;
+        $campus_id=Auth::user()->CAMPUS_ID;
+        if(isset($data->USER_ID)){
+          // return $emp[0]->PAYROLL_ID;
+        $employee_id=$emp[0]->PAYROLL_ID;
+        $campus_id=$emp[0]->CAMPUS_ID;
+        }
         $exam_id=$data->exam_id;
         $test_type=$data->test_type;
         $mode=$data->mode_id;
         if(isset($data->date))
         $date=$data->date;
         else
-          $date=date("Y-m");
+        $date=date("Y-m");
 
         $subject_name=DB::table('0_subjects')->where('subject_id',$subject_id)->pluck('subject_name')[0];
 
         $section=DB::table('IP_Exam_Section')
-                ->where('EMPLOYEE_ID',Auth::user()->payroll_id)
+                ->where('EMPLOYEE_ID',$employee_id)
                 ->where('SUBJECT_ID',$subject_id)
                 ->pluck('SECTION_ID');
 
@@ -51,7 +64,7 @@ class Subject extends Model
                     ->where('eg.CLASS_ID',$class_id)
                     ->where('eg.PROGRAM_ID',$program_id)
                     ->where('e.result_generated1_no0',1)
-                    ->where('em.CAMPUS_ID',Auth::user()->CAMPUS_ID)
+                    ->where('em.CAMPUS_ID',$campus_id)
                     ->whereRaw('FIND_IN_SET(?,tm.test_mode_subjects)', [$subject_id])
                     ->where('eg.test_sl',$exam_id)
                     ->select('eg.test_sl','tm.marks_upload_final_table_name','e.max_marks','e.model_year','e.paper','e.omr_scanning_type','tm.test_mode_name','tm.test_mode_id')->get();
@@ -66,7 +79,7 @@ class Subject extends Model
                     ->where('eg.CLASS_ID',$class_id)
                     ->where('eg.PROGRAM_ID',$program_id)
                     ->where('e.result_generated1_no0',1)
-                    ->where('em.CAMPUS_ID',Auth::user()->CAMPUS_ID)
+                    ->where('em.CAMPUS_ID',$campus_id)
                     ->whereRaw('FIND_IN_SET(?,tm.test_mode_subjects)', [$subject_id])
                     ->select('eg.test_sl','tm.marks_upload_final_table_name','e.max_marks','e.model_year','e.paper','e.omr_scanning_type','tm.test_mode_name','tm.test_mode_id','tc.CAMPUS_ID')->get();
  // return \Request::segment(2);
@@ -75,14 +88,14 @@ class Subject extends Model
 
                  if($change=="p"){
                   if(isset($data->exam_id))
-                  return static::examstudent($output,$subject_name,$section,$data->exam_id,$data->section_id,$test_type,$mode,$date,$page)['Result'];  
+                  return static::examstudent($output,$subject_name,$section,$data->exam_id,$data->section_id,$test_type,$mode,$date,$page,$campus_id,$emp)['Result'];  
                 else
-                   return static::examstudent($output,$subject_name,$section,"0",$data->section_id,$test_type,$mode,$date,$page)['Result'];  
+                   return static::examstudent($output,$subject_name,$section,"0",$data->section_id,$test_type,$mode,$date,$page,$campus_id,$emp)['Result'];  
                 }
                  elseif($change=="e"){
                   $test=array();
                   $block_no=array();
-                  $exam=static::examstudent($output,$subject_name,$section,$data->exam_id,$data->section_id,$test_type,$mode,$date,$page)['ExamList'];  
+                  $exam=static::examstudent($output,$subject_name,$section,$data->exam_id,$data->section_id,$test_type,$mode,$date,$page,$campus_id,$emp)['ExamList'];  
                   // return $exam;
                   // return [
 
@@ -139,6 +152,7 @@ class Subject extends Model
                             $examlist[$key]['test_code']=$value->test_code;
                             $data1=new \stdClass(); 
                             $data1->exam_id=$value->sl;
+                            $data1->USER_ID=$data->USER_ID;
                             if(isset(Type::teacher_exam_info($data1)['Total']))
                             $examlist[$key]['Total_percentage']=Type::teacher_exam_info($data1)['Total'];
                             else
@@ -168,14 +182,15 @@ class Subject extends Model
                             'response_message'=>"success",
                             'response_code'=>"1",
                             ],
-                            "Exam_date"=>date('Y-M',strtotime($date)),
+                    "Exam_date"=>date('Y-M',strtotime($date)),
                     "Totalpage"=>ceil((count($exam))/($block_no[0]+1)),
                     "Block_Count"=>$block_no[0],
                     "Exam"=>$examlist,
                         ];
                   }               
                    elseif($change=="s"){ 
-                  $student=static::examstudent($output,$subject_name,$section,$data->exam_id,$data->section_id,$test_type,$mode,$date,$page)['StudentList'];
+                  $student=static::examstudent($output,$subject_name,$section,$data->exam_id,$data->section_id,$test_type,$mode,$date,$page,$campus_id,$emp)['StudentList'];
+                  // return $student;
                   if($student==0)
                      return [
                         'Login' => [
@@ -259,7 +274,7 @@ class Subject extends Model
                 }
 
     }
-    public static function examstudent($output,$subject_name,$section,$exam_id,$section_id,$test_type,$mode,$date,$page)
+    public static function examstudent($output,$subject_name,$section,$exam_id,$section_id,$test_type,$mode,$date,$page,$campus_id,$emp)
     {
         $examlist=array();
         $studentlist=array();
@@ -376,7 +391,7 @@ class Subject extends Model
           ->select(DB::raw("(".$list1."/".$list.")*100 as percentage,a.STUD_ID,test_code_sl_id,st.SECTION_ID,".$list1.",ts.section_name,test_code,start_date,PROGRAM_RANK,STREAM_RANK,SEC_RANK,CAMP_RANK,CITY_RANK,DISTRICT_RANK,STATE_RANK,ALL_INDIA_RANK,st.NAME,this_college_id"))
          ->where('test_code_sl_id',$exam_id)
           ->where('st.SECTION_ID',$section_id)
-          ->where('st.CAMPUS_ID',Auth::user()->CAMPUS_ID)
+          ->where('st.CAMPUS_ID',$campus_id)
           ->get();
           else
           // $res=DB::select("select (".$list1."/".$list.")*100 as percentage,a.STUD_ID,test_code_sl_id,st.SECTION_ID,".$list1.",ts.section_name,test_code,start_date,PROGRAM_RANK,STREAM_RANK,SEC_RANK,CAMP_RANK,CITY_RANK,DISTRICT_RANK,STATE_RANK,ALL_INDIA_RANK,st.NAME,st.SURNAME,this_college_id from ".$table." as `a` inner join `scaitsqb.t_student_bio` as `st` on `st`.`ADM_NO` = `a`.`STUD_ID` inner join t_college_section as ts on ts.SECTION_ID=st.SECTION_ID inner join 1_exam_admin_create_exam as ex on ex.sl=test_code_sl_id where `test_code_sl_id` = '".$value->test_sl."' and `st`.`SECTION_ID` in (".implode(',',$section1).")");
@@ -387,7 +402,7 @@ class Subject extends Model
           ->select(DB::raw("(".$list1."/".$list.")*100 as percentage,a.STUD_ID,test_code_sl_id,st.SECTION_ID,".$list1.",ts.section_name,test_code,start_date,PROGRAM_RANK,STREAM_RANK,SEC_RANK,CAMP_RANK,CITY_RANK,DISTRICT_RANK,STATE_RANK,ALL_INDIA_RANK,st.NAME,this_college_id"))
           ->where('test_code_sl_id',$value->test_sl)
           ->whereIn('st.SECTION_ID',$section1)
-          ->where('st.CAMPUS_ID',Auth::user()->CAMPUS_ID)
+          ->where('st.CAMPUS_ID',$campus_id)
           ->get();
 
            $studentlist[$key]['obtained']=$res;
@@ -422,7 +437,8 @@ class Subject extends Model
                             'response_message'=>"success",
                             'response_code'=>"1",
                             ],
-            "data"=>$final],
+            "data"=>$final,
+          ],
           "ExamList"=>array_values($examlist),
           "StudentList"=>$studentlist,
         ];       
@@ -430,6 +446,16 @@ class Subject extends Model
     }
     public static function sectionlist($data)
     {
+      if($data->USER_ID)
+
+      $result=DB::table('IP_Exam_Section as is')
+                    ->join('t_college_section as cs','is.SECTION_ID','=','cs.SECTION_ID')
+                    ->where('is.EMPLOYEE_ID',$data->USER_ID)
+                    ->select('is.SECTION_ID','cs.section_name')
+                    ->distinct('is.SECTION_ID','cs.section_name')
+                    ->get();
+      else
+
       $result=DB::table('IP_Exam_Section as is')
                     ->join('t_college_section as cs','is.SECTION_ID','=','cs.SECTION_ID')
                     ->where('is.EMPLOYEE_ID',Auth::user()->payroll_id)

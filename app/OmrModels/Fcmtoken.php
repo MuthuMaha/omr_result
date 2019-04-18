@@ -31,7 +31,8 @@ class Fcmtoken extends Model
     public static function sendmessage($data)
     {
       // return $data->api_key;
-      if($data->api_key=="2y10CcFVl6k3gFHaKDzW1TH4TDJ0uM15hwnlIb0/fDUkRviOO4McnT2"){
+      $api_key=Exam::where('sl',$data->exam_id)->pluck('api_key')[0];
+      if($data->api_key==$api_key){
       if($data->notify_type==0)
       $type='Exam Created';
       if($data->notify_type==1)

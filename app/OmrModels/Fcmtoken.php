@@ -115,7 +115,7 @@ class Fcmtoken extends Model
                else{}
              
 
-               $token=Fcmtoken::where('USERID',$value1)->get();
+               $token=Fcmtoken::where('USERID',$value1)->orderby('created_at','DESC')->get();
                foreach ($token as $key3 => $value3) {
                 $cx=json_decode($notify->parameter);
                 $fcmUrl = 'https://fcm.googleapis.com/fcm/send';

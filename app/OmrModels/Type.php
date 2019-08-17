@@ -32,6 +32,7 @@ class Type extends Model
     				->wherein('st.SECTION_ID',$section)
     				->select($table[0].'.*')
     				->get();
+    				// return $data->exam_id;
     	if(count($result)==0){
 	    		return [
 	                        'Login' => [
@@ -234,11 +235,12 @@ class Type extends Model
 				$section="";
 				$xt=0;$gt=0;$pt=0;$ut=0;$rt=0;$wt=0;
 				$t=array_sum($cal['m']);
+				$te=array_unique($cal['se']);
 		foreach ($cal['b'] as $key => $value) {
 			if(!empty($cal['se']))
 					if($section!=$cal['se'][$sect])
 					{
-						if($count==4)
+						if($count==count($te)+1)
 							$count=1;
 					$count++;
 					$section=$cal['se'][$sect];
@@ -279,7 +281,9 @@ class Type extends Model
 				$aa[$subjects][$secti][$key]=$cal['m'][$key];		
 			}
 			else{
-				
+				if($neg_mark>0)
+						$neg_mark=(-1 )* $neg_mark;
+					
 				$an[$subjects][$secti][$key]=$neg_mark;
 
 				$ast[$subjects][$secti][$key]=$neg_mark;
@@ -339,7 +343,10 @@ class Type extends Model
 
 	   	foreach ($cal['s'] as $key2 => $value2) {
 	   		for ($i=1; $i <=$ans['Section_Count']; $i++) {
+	   			if($ans['Sectionwise_total'][$ar2[$key2]]['Section'.$i]!=0)
 	   			$ans[$ar2[$key2]]['Section'.$i][$ar1[$key]]=number_format((float) ($ans[$ar1[$key]][$ar2[$key2]]['Section'.$i]/$ans['Sectionwise_total'][$ar2[$key2]]['Section'.$i])*100, '2', '.', ''); 
+	   			else
+	   			$ans[$ar2[$key2]]['Section'.$i][$ar1[$key]]=0.01;
 	   			$ans[$ar2[$key2]]['Section'.$i]['Section']='Sec'.$i;
 
 	   	   		}	
@@ -395,14 +402,17 @@ class Type extends Model
 	   $total=0;
 		foreach ($ans as $key => $value) 
 		{
-			$ap[$a]['Subject']=$key;
+			$ap[$a]['Subject']=strtoupper($key);
 			for ($i=1; $i <= $section; $i++) { 
 				foreach ($ar1 as $key1 => $value1) {
 					if(isset($ap[$a][$value1]) && isset($value['Section'.$i][$value1]))
 						$ap[$a][$value1]+=$value['Section'.$i][$value1]/$section; 
 					elseif(isset($value['Section'.$i][$value1]))
 						$ap[$a][$value1]=$value['Section'.$i][$value1]/$section;
+					if(isset($ap[$a][$value1]))
 					$ap[$a][$value1]=number_format((float)($ap[$a][$value1]),'2','.','');
+				else
+					$ap[$a][$value1]=0.00;
 				}
 
 			}
@@ -435,10 +445,10 @@ class Type extends Model
 
 			"range_to"=>$range_to,
 				
-			"weak_subject"=>$weak,
+			"weak_subject"=>strtoupper($weak),
 			// "weak_section"=>$sectionweak,
-			"average_subject"=>$average,
-			"strong_subject"=>$strong,
+			"average_subject"=>strtoupper($average),
+			"strong_subject"=>strtoupper($strong),
 			// "strong_section"=>$sectionstrong,
 				],
 			// "strong_subject"=>$strong,

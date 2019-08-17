@@ -19,7 +19,7 @@ class Fcmtoken extends Model
       // foreach ($arr as $key => $value) {
         if(count($arr)!=0)
       $arr1=new NotifyCollection(
-        Notifymessage::whereIn('id',explode(',',$arr[0]->notification_ids))->get());
+        Notifymessage::whereIn('id',explode(',',$arr[0]->notification_ids))->orderby('created_at','asc')->get());
       // }
       return  ['Login' => [
                             'response_message'=>"success",
@@ -30,6 +30,7 @@ class Fcmtoken extends Model
     }
     public static function sendmessage($data)
     {
+      $abc=array();
       // return $data->api_key;
       $api_key=Exam::where('sl',$data->exam_id)->pluck('api_key')[0];
       if($data->api_key==$api_key){
@@ -62,7 +63,9 @@ class Fcmtoken extends Model
            // ->where('tt.STREAM_ID',$value->STREAM_ID)
            // ->where('tc.PROGRAM_ID',$value->PROGRAM_ID)
            ->where('e.PAYROLL_ID','<>','')
+           ->distinct('e.PAYROLL_ID')
            ->pluck('e.PAYROLL_ID');
+           if($data->notify_type==0)
          foreach($gcsp as $key=>$value){
          $student[]=Student::
           where('group_id',$value->GROUP_ID)
@@ -70,10 +73,12 @@ class Fcmtoken extends Model
          ->where('stream_id',$value->STREAM_ID)
          ->where('program_id',$value->PROGRAM_ID)
          ->whereIn('CAMPUS_ID',$campus)
+         ->distinct('ADM_NO')
          ->pluck('ADM_NO')
-         ;            
-        
+         ;         
          }
+         else
+          $student[]=DB::table('101_mpc_marks')->where('test_code_sl_id',$data->exam_id)->pluck('STUD_ID as ADM_NO');
 
          // return $student;
           $fcmUrl = 'https://fcm.googleapis.com/fcm/send';            
@@ -82,7 +87,7 @@ class Fcmtoken extends Model
 
          foreach ($student as $key => $value) {
           foreach ($value as $key1 => $value1) {
-        $body='{"mode_id":'.$exam[0]->mode.',"test_type":'.$exam[0]->test_type.',"exam_id":'.$data->exam_id.',"USERID":"'.$value1.'","date":"'.$d.'","test_mode":"'.$exam[0]->test_mode_name.'","model_year":"'.$exam[0]->model_year.'_'.$exam[0]->paper.'"}';
+        $body='{"mode_id":'.$exam[0]->mode.',"test_type_id":'.$exam[0]->test_type.',"exam_id":'.$data->exam_id.',"USERID":"'.$value1.'","date":"'.$d.'","test_mode":"'.$exam[0]->test_mode_name.'","model_year":"'.$exam[0]->model_year.'_'.$exam[0]->paper.'"}';
           $notification = [
                  'title' => $title,
                  'parameter'=>$body,
@@ -115,7 +120,8 @@ class Fcmtoken extends Model
                else{}
              
 
-               $token=Fcmtoken::where('USERID',$value1)->orderby('created_at','DESC')->get();
+               $token=Fcmtoken::where('USERID',$value1)->orderby('created_at','DESC')->distinct('token')->pluck('token');
+             $abc[]=$token;
                foreach ($token as $key3 => $value3) {
                 $cx=json_decode($notify->parameter);
                 $fcmUrl = 'https://fcm.googleapis.com/fcm/send';
@@ -125,7 +131,7 @@ class Fcmtoken extends Model
                        "notify_type"=>$notify->notify_type,
                    ];
                    $notification['mode_id']=$cx->mode_id;
-                   $notification['test_type']=$exam[0]->test_type_name;
+                   $notification['test_type_id']=$exam[0]->test_type_name;
                    $notification['exam_id']=$cx->exam_id;
                    $notification['USERID']=$cx->USERID;
                    $notification['date']=$cx->date;
@@ -133,7 +139,7 @@ class Fcmtoken extends Model
                    $notification['model_year']=$cx->model_year;
                    $notification['start_date']=$exam[0]->start_date;
                  $fcmNotification = [
-                     'to'   =>$token[0]->token,
+                     'to'   =>$value3,
                      'data' => $notification
                  ];
                   $headers = [

@@ -39,11 +39,12 @@ use Illuminate\Support\Facades\Input;
 		// return $emp->searchByQuery(['match' => ['query' => '1']]);
 
 });
+	Route::get('check','AuthController@check');
 	Route::get('/getDetails', 'GetComponentDetailController@getData');
 	Route::post('userLogin', 'AuthController@tokenAuthAttempt');
 	Route::post('uploadResults','AuthController@upload');
 	/*OMR Result Application*/
-		Route::get('sendmessage','OmrControllers\ResultController@sendmessage');
+	Route::get('sendmessage','OmrControllers\ResultController@sendmessage');
 	
 	Route::post('resultLogin', 'OmrControllers\ResultController@login');
 	Route::group([ 'middleware' => 'auth:token' ], function () 

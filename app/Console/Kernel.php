@@ -27,6 +27,15 @@ class Kernel extends ConsoleKernel
         // $schedule->command('inspire')
         //          ->hourly();
     }
+    /**
+    * Get the timezone that should be used by default for scheduled events.
+    *
+    * @return \DateTimeZone|string|null
+    */
+    protected function scheduleTimezone()
+    {
+    return 'Asia/Calcutta';
+    }
 
     /**
      * Register the commands for the application.

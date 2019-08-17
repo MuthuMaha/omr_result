@@ -17,7 +17,7 @@ class Notify extends JsonResource
     {
       $result=[
             'title'=>$this->title,
-            'test_type'=>Type::where('test_type_id',json_decode($this->parameter)->test_type)->pluck('test_type_name')[0],
+            'test_type'=>Type::where('test_type_id',json_decode($this->parameter)->test_type_id)->pluck('test_type_name')[0],
             'start_date'=>date('d-M-Y',strtotime(Exam::where('sl',json_decode($this->parameter)->exam_id)->pluck('start_date')[0])),
             'url'=>$this->url,
             'parameter'=>json_decode($this->parameter),

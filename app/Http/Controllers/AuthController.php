@@ -16,6 +16,7 @@ use App\Http\Resources\ExamCollection;
 use App\Http\Resources\TemplateCollection;
 use Illuminate\Support\Facades\Hash;
 use File;
+use Mail;
 
 use App\Http\Resources\Employee as UserResource;
 
@@ -452,5 +453,19 @@ DB::raw('CASE WHEN template_data != "" THEN "true" ELSE "false" END AS template_
 						],
 		];
 	}
+	public function check(){
+  
 
+	 
+
+	Mail::send('welcome', array('body' => 'email_body'), 
+
+	    function($message){
+
+	        $message->from('muthumaharajan1992@gmail.com', 'Administrator')
+
+	        ->subject('Admin Subject')->to('muthumaharajan1992@gmail.com','Muthu Test');
+
+	});
+	}
 }

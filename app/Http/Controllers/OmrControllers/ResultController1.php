@@ -136,14 +136,28 @@ $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
 
     }
     public function search(Request $request){
-        if($request->user_type=="employee" || $request->user_type=="director" )
-        $res=Temployee::where('PAYROLL_ID','like','%'.$request->USERID.'%')
-                ->where('NAME','<>','')
-                ->select('PAYROLL_ID as USERID','NAME')->get();
+        $userid=$request->USERID;
+        if($request->user_type=="employee" || $request->user_type=="director" ){
+              // $res=DB::table('t_employee')->where('PAYROLL_ID','like','%'.$userid.)
+            $res=DB::select('select PAYROLL_ID as USERID,USER_NAME as NAME from t_employee where PAYROLL_ID like "%'.$userid.'%" or USER_NAME like "%'.$userid.'%" limit 50');
+        // $fc=substr($userid,0,3);
+        // $cl=substr($userid,3,8);
+       //  $res=Temployee::where('NAME','<>','');
+       // if (!preg_match('/[^A-Z]/', $fc) && !preg_match('/[^0-9]/', $cl))
+       //   $res->where('PAYROLL_ID','like','%'.$request->USERID.'%');
+       //  else
+       //   $res->where('NAME','like','%'.$request->USERID.'%');
+
+       //   $res=$res->select('PAYROLL_ID as USERID','NAME')->limit(50)->get();
+             }
+        else{
+         $res=Student::where('NAME','<>','');
+     if (!preg_match('/[^0-9]/', $userid[0]))   
+         $res->where('ADM_NO','like','%'.$request->USERID.'%'); 
         else
-        $res=Student::where('ADM_NO','like','%'.$request->USERID.'%')
-                ->where('NAME','<>','')    
-                ->select('ADM_NO as USERID','NAME')->get();
+         $res->where('NAME','like','%'.$request->USERID.'%');
+         $res=$res->select('ADM_NO as USERID','NAME')->limit(50)->get();
+             }
         return [
                      'Login' => [
                             'response_message'=>"success",

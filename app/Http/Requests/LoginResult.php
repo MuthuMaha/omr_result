@@ -25,7 +25,7 @@ class LoginResult extends FormRequest
     {
         return [
            'USERNAME'=>'required',
-           'PASSWORD'=>'required',
+           'fcm_token'=>'required',
            'user_type'=>'required',
         ];
     }
@@ -33,7 +33,7 @@ class LoginResult extends FormRequest
     {
         return [
            'USERNAME.required'=>'USERNAME is required',
-           'PASSWORD.required'=>'PASSWORD is required',
+           'fcm_token.required'=>'fcm_token is required',
            'user_type.required'=>'user_type is required',
         ];
     }

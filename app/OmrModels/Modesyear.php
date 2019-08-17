@@ -13,6 +13,7 @@ class Modesyear extends Model
   public $timestamps=false;
   
     public static function exam_info($data,$ch){
+    	
     	$exam=Exam::where('sl',$data->exam_id)->select('key_answer_file_long_string as CorrectAnswer','model_year','paper','omr_scanning_type','to_from_range','subject_string_final','sl','test_code','mode','mark_file_long_string','max_marks')->get();
     	// return $exam;
     	$table=Mode::where('test_mode_id',$exam[0]->mode)->pluck('marks_upload_final_table_name');
@@ -196,6 +197,8 @@ else
 					// return $subjects.$key;
 				}
 			if($value=="X" || $value=="D"){
+					$ansd[$key]=$cal['m'][$key];
+
 				$ad[$subjects][$secti]['Section']=$secti;
 				// if(isset($ad[$subjects][$secti]['Total']))
 				// $ad[$subjects][$secti]['Total']+=$cal['m'][$key];
@@ -212,6 +215,8 @@ else
 				}
 			}
 			elseif($value=="G"){
+					$ansd[$key]=$cal['m'][$key];
+
 				$ad[$subjects][$secti]['Section']=$secti;
 				if(isset($ad[$subjects][$secti]['Total']))
 				$ad[$subjects][$secti]['Total']+=$cal['m'][$key];
@@ -224,6 +229,8 @@ else
 				$ad[$subjects][$secti]['Grace']=$cal['m'][$key];
 			}
 			elseif($value=="U"){
+					$ansd[$key]=0;
+
 				$ad[$subjects][$secti]['Section']=$secti;
 				
 				if(isset($ad[$subjects][$secti]['Unattempted']))
@@ -235,6 +242,8 @@ else
 				$ad[$subjects][$secti]['Section']=$secti;
 				
 				if(isset($ad[$subjects][$secti]['Partial'])){
+					$ansd[$key]=intval(preg_replace('/[^0-9]+/', '',$parr[$pa]));
+
 					if(isset($ad[$subjects][$secti]['Total']))
 				$ad[$subjects][$secti]['Total']+=intval(preg_replace('/[^0-9]+/', '',$parr[$pa]));
 				else
@@ -245,6 +254,8 @@ else
 		   	   $pa++;
 				}
 				else{
+					$ansd[$key]=intval(preg_replace('/[^0-9]+/', '',$parr[$pa]));
+
 					if(isset($ad[$subjects][$secti]['Total']))
 				$ad[$subjects][$secti]['Total']+=intval(preg_replace('/[^0-9]+/', '',$parr[$pa]));
 				else
@@ -257,6 +268,8 @@ else
 				}
 			}
 			elseif($value=="R"){
+					$ansd[$key]=$cal['m'][$key];
+
 				$ad[$subjects][$secti]['Section']=$secti;
 				if(isset($ad[$subjects][$secti]['Total']))
 				$ad[$subjects][$secti]['Total']+=$cal['m'][$key];
@@ -271,10 +284,16 @@ else
 			else{
 				$ad[$subjects][$secti]['Section']=$secti;
 
-				if(isset($ad[$subjects][$secti]['Total']))
+				if(isset($ad[$subjects][$secti]['Total'])){
+					if($neg_mark>0)
+						$neg_mark=(-1 )* $neg_mark;
 				$ad[$subjects][$secti]['Total']+=$neg_mark;
-				else
+				}
+				else{
+					if($neg_mark>0)
+						$neg_mark=(-1 )* $neg_mark;
 				$ad[$subjects][$secti]['Total']=$neg_mark;
+				}
 
 				if(isset($ad[$subjects][$secti]['Negative']))
 				$ad[$subjects][$secti]['Negative']+=$neg_mark;
@@ -285,6 +304,10 @@ else
 				$ad[$subjects][$secti]['Wrong']+=$cal['m'][$key];
 				else
 				$ad[$subjects][$secti]['Wrong']=$cal['m'][$key];
+
+					$ansd[$key]=$neg_mark;
+
+
 			}
 			$sect++;
 
@@ -308,7 +331,7 @@ else
 		$a=0;
 		foreach ($ad as $key => $value) 
 		{
-			$ap[$a]['Subject']=$key;
+			$ap[$a]['Subject']=strtoupper($key);
 			for ($i=1; $i <= $count; $i++) { 
 				foreach ($ex as $key1 => $value1) {
 					if(isset($ap[$a][$value1]) && isset($value['Section'.$i][$value1]))
@@ -318,6 +341,7 @@ else
 
 				}
 			}
+			ksort($value);
 			$ap[$a]['Sectiondetails']=array_values($value);
 
 			$a++;
@@ -337,6 +361,7 @@ else
 			// "Partial"=>$ap,
 			// "Grace"=>$ag,
 			"Data"=>$ap,
+			"CorrectMark"=>$ansd,
 			// "Missed_Partial"=>$am,
 			// "Exam_Total_Mark"=>$t,
 			"Analysis"=>$analysis,
@@ -457,10 +482,10 @@ else
 		return [
 			"range_from"=>$range_from,
 			"range_to"=>$range_to,
-			"weak_subject"=>$weak,
+			"weak_subject"=>strtoupper($weak),
 			// "weak_section"=>$sectionweak,
-			"average_subject"=>$average,
-			"strong_subject"=>$strong,
+			"average_subject"=>strtoupper($average),
+			"strong_subject"=>strtoupper($strong),
 			// "strong_section"=>$sectionstrong,
 				];
 	}

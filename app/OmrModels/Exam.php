@@ -4,6 +4,7 @@ namespace App\OmrModels;
 use App\BaseModels\Campus;
 use App\BaseModels\Student;
 use Auth;
+use App\OmrModels\main;
 use File;
 use Illuminate\Http\Request;
 use DB;
@@ -15,8 +16,6 @@ class Exam extends Model
   protected $primaryKey='sl';
   public $timestamps=false;
   public static function total($data){
-    // sleep(10);
- // return \;
 $stud1=Student::where('ADM_NO',$data->USER_ID)->select('ADM_NO','CAMPUS_ID','CAMPUS_NAME','PROGRAM_NAME','GROP','NAME')->get();
 if(isset($stud[0])){
 $ADM_NO=$stud1[0]->ADM_NO;
@@ -52,7 +51,7 @@ $CAMPUS_ID=$stud1[0]->CAMPUS_ID;
     //   $exam->where('start_date','like',$data->date.'%');
     // else
       // $exam->where('start_date','like',$date.'%');
-    $exam=$exam->get();
+    $exam=$exam->orderBy('sl','desc')->get();
 
     foreach ($exam as $key => $value) 
     {
@@ -63,6 +62,8 @@ $CAMPUS_ID=$stud1[0]->CAMPUS_ID;
       $exam_data=DB::table($subject_marks[0]->marks_upload_final_table_name)
       ->join('1_exam_admin_create_exam as e','e.sl','=',$subject_marks[0]->marks_upload_final_table_name.'.test_code_sl_id')
             ->whereRaw('test_code_sl_id ="'.$value->sl.'"')
+          
+
             ->select('test_code_sl_id','STUD_ID','TOTAL','PROGRAM_RANK','STREAM_RANK','SEC_RANK','CAMP_RANK','CITY_RANK','DISTRICT_RANK','STATE_RANK','ALL_INDIA_RANK',DB::raw("DATE_FORMAT(e.start_date,'%d-%m-%Y') as start_date"),'e.test_code','e.max_marks');
             if(isset($data->USER_ID))
             $exam_data->whereRaw('STUD_ID ="'.$data->USER_ID.'"');
@@ -73,7 +74,7 @@ $CAMPUS_ID=$stud1[0]->CAMPUS_ID;
             if(\Request::segment(2)=="examlist")
              $exam_data->where('start_date','like',$date.'%');
 
-            $exam_data=$exam_data->get();
+            $exam_data=$exam_data->orderBy('test_code_sl_id','desc')->get();
             foreach ($exam_data as $keya => $valuea) {
               $exam_data[$keya]->DISTOTAL=(int)$valuea->TOTAL."/".array_sum(explode(',',$valuea->max_marks));
             }
@@ -163,7 +164,12 @@ $CAMPUS_ID=$stud1[0]->CAMPUS_ID;
     return $out;
   }
   public static function test_type_list($data){
-    $out=DB::table('0_test_types')->select('test_type_id','test_type_name')->where('test_type_id','<>','0')->get();
+if(isset($data->group_id))
+    $out=DB::select("
+SELECT * FROM `0_test_types` as tt where `test_type_id` <> 0 ORDER BY test_type_id=1 DESC, (SELECT count(ee.sl) FROM `1_exam_admin_create_exam` as ee inner join 1_exam_gcsp_id as ei on ei.test_sl=ee.sl WHERE ee.`result_generated1_no0`=1 and ee.`test_type`=tt.`test_type_id` and GROUP_ID='".$data->group_id."' and CLASS_ID='".$data->class_id."' and STREAM_ID='".$data->stream_id."' and PROGRAM_ID='".$data->program_id."') DESC");
+else
+    $out=DB::select("
+SELECT * FROM `0_test_types` as tt where `test_type_id` <> 0 ORDER BY test_type_id=1 DESC, (SELECT count(ee.sl) FROM `1_exam_admin_create_exam` as ee inner join 1_exam_gcsp_id as ei on ei.test_sl=ee.sl WHERE ee.`result_generated1_no0`=1 and ee.`test_type`=tt.`test_type_id`) DESC");
     return 
                      ['Login' => [
                             'response_message'=>"success",
@@ -172,6 +178,7 @@ $CAMPUS_ID=$stud1[0]->CAMPUS_ID;
   }
   public static function AnswerDetails($data){
     // return $data;
+    $smark=$data;
     if(!isset($data->subject_id)){
       
       $data->subject_id=1;
@@ -193,9 +200,9 @@ $CAMPUS_ID=$stud1[0]->CAMPUS_ID;
     if(!isset($Result[0]))
       $Result=DB::table($result_string)->where('test_code_sl_id',$data->exam_id)->where('STUD_ID',$data->STUD_ID)->pluck('Result_String');
      $filedata=ias_model_year_paper($correctans[0]->model_year,$correctans[0]->paper);
-     $marked=static::AnswerObtain($data,$correctans,array_filter($filedata[1]));
+     $marked=main::AnswerObtain($data,$correctans,array_filter($filedata[1]));
      // return $filedata[0];
-     return static::AdvanceAnswer($filedata,$correctans,$marked,$data->subject_id,$Result[0],$result_string,$data->exam_id,$data->STUD_ID);
+     return static::AdvanceAnswer($filedata,$correctans,$marked,$data->subject_id,$Result[0],$result_string,$data->exam_id,$data->STUD_ID,$smark);
     }
     else
     {
@@ -206,7 +213,7 @@ $CAMPUS_ID=$stud1[0]->CAMPUS_ID;
       $Result=DB::table($result_string)->where('test_code_sl_id',$data->exam_id)->where('STUD_ID',$data->STUD_ID)->pluck('Result_String');
     else
     $Result=DB::table($result_string)->where('test_code_sl_id',$data->exam_id)->where('STUD_ID',Auth::user()->ADM_NO)->pluck('Result_String');
-     $marked=static::AnswerObtain($data,$correctans,$type);
+     $marked=main::AnswerObtain($data,$correctans,$type);
      if(sizeof($marked)==0)
        return  [
               'Login' => [
@@ -232,11 +239,13 @@ $CAMPUS_ID=$stud1[0]->CAMPUS_ID;
                             ]
             ];
 
-       return static::NonAdvanceAnswer($filedata,$correctans,$marked,$data->subject_id,$Result[0],$result_string,$data->exam_id,$data->STUD_ID);
+       return static::NonAdvanceAnswer($filedata,$correctans,$marked,$data->subject_id,$Result[0],$result_string,$data->exam_id,$data->STUD_ID,$smark);
     }
 
   }
-  public static function NonAdvanceAnswer($data,$ans,$marked,$id,$result,$table,$exam_id,$STUD_ID){
+  public static function NonAdvanceAnswer($data,$ans,$marked,$id,$result,$table,$exam_id,$STUD_ID,$smark){
+    $markf=Modesyear::exam_info($smark,0)['CorrectMark'];
+
     $result=str_split($result);
     // return $result;
     $sl=$ans[0]->sl;
@@ -273,10 +282,12 @@ $CAMPUS_ID=$stud1[0]->CAMPUS_ID;
       }
       // $list['Exam_Id']=$sl;
       // $list['Exam_Name']=$test_code;
+      // dd($ans);
       // $list['Subject'][$subject][$i]= new \stdClass();
       $list[$subject][$i]['question_no']=$i;
       // $list[$subject][$i]->{'subject_name'}=$subject;
       $list[$subject][$i]['question_type']="";
+      $list[$subject][$i]['obtained_mark']=$markf[$i-1];
 
       $list[$subject][$i]['correct_answer']=$correct[$ans];
       $list[$subject][$i]['marked_answer']=$marked['ansdata'][$ans];
@@ -312,18 +323,21 @@ $CAMPUS_ID=$stud1[0]->CAMPUS_ID;
       $new=array_values($new);
       $dr=array_combine($subject_name, explode(',',$ob[0]->max_marks));
       // $sb=array_merge($ans[0]->subject_string_final,$subject_name);
+      $subject_name=array_flip($subject_name);
+      $subject_name=array_change_key_case($subject_name,CASE_UPPER);
     return 
                      ['Login' => [
                             'response_message'=>"success",
                             'response_code'=>"1",
                             ],"Data"=>$new,
                             "subject_id"=>$data[9],
-                            "subject_name"=>$subject_name,
+                            "subject_name"=>array_flip($subject_name),
                             "mark_obtained"=>$ob[0]->{strtoupper($sub)}."/".$dr[$sub],
                           ];
   }
-  public static function AdvanceAnswer($data,$ans,$marked,$id,$result,$table,$exam_id,$STUD_ID){
+  public static function AdvanceAnswer($data,$ans,$marked,$id,$result,$table,$exam_id,$STUD_ID,$smark){
     // return $data[1];
+    $markf=Modesyear::exam_info($smark,0)['CorrectMark'];
     $sbi=array();
     $a=0;
     $sl=$ans[0]->sl;
@@ -371,11 +385,14 @@ $CAMPUS_ID=$stud1[0]->CAMPUS_ID;
       //  $list['Number_of_Subjects']=count($subject_name);
        // $list[]['Subject']=$subject;
        // $list[$subject]['Section'.$s]='Section'.$s;
+   // return $markf;
        if(isset($correct[$ans])){
        $list[$subject]['Section'.$s][$key]['question_no']=$qno[$key-1];
        // if(isset($qno[$key]))
        $list[$subject]['Section'.$s][$key]['question_type']=$value;
+       $list[$subject]['Section'.$s][$key]['obtained_mark']=$markf[$key-1];
        $list[$subject]['Section'.$s][$key]['correct_answer']=static::orcondition($correct[$ans]);
+       if(isset($marked['ansdata'][$ans]))
        $list[$subject]['Section'.$s][$key]['marked_answer']=$marked['ansdata'][$ans];
        $list[$subject]['Section'.$s][$key]['result_string']=$result_list[$key-1];
        }// $list[$s]['Section'][]='Section'.$s;
@@ -445,70 +462,84 @@ $CAMPUS_ID=$stud1[0]->CAMPUS_ID;
                             "mark_obtained"=>$ob[0]->{strtoupper($sub)}."/".$dr[strtoupper($sub)],
                           ];
   }
-  public static function AnswerObtain($data,$ans,$type)
-  {
-    $stud=Student::where('ADM_NO',$data->STUD_ID)->get();
-    $answer1=array();
-      $ad=0;
-      $ob=array();
-     $abcd = array('A'=>1, 'B'=>2,'C'=>3 ,'D'=>4 ,'E'=>5 ,'F'=>6 ,'G'=>7 ,'H'=>8 ,'I'=>9,'U'=>0 );
-     $nonadv=array('A'=>1,'B'=>2,'C'=>4,'D'=>8,'U'=>0);
-     $integer=array('U'=>-1,'M'=>-2,'1'=>1,'2'=>2,'3'=>3,'4'=>4,'5'=>5,'6'=>6,'7'=>7,'8'=>8,'9'=>9,'0'=>0);
-     $pqrst = array('P'=>1, 'Q'=>2, 'R'=>3, 'S'=>4, 'T'=>5, 'U'=>6, 'V'=>7, 'W'=>8, 'X'=>9,'U'=>0); 
-    if($ans[0]->omr_scanning_type=="advanced")
-    {
-    $path='/var/www/html/sri_chaitanya/College/3_view_created_exam/uploads/'.$ans[0]->sl.'/final/'.Auth::user()->CAMPUS_ID.'.iit';
-    if(isset($data->STUD_ID))
-       $path='/var/www/html/sri_chaitanya/College/3_view_created_exam/uploads/'.$ans[0]->sl.'/final/'.$stud[0]->CAMPUS_ID.'.iit';
+  // public static function AnswerObtain($data,$ans,$type)
+  // {
+  //   // dd($type);
+  //   $stud=Student::where('ADM_NO',$data->STUD_ID)->get();
+  //   $answer1=array();
+  //     $ad=0;
+  //     $ob=array();
+  //    $abcd = array('A'=>1, 'B'=>2,'C'=>3 ,'D'=>4 ,'E'=>5 ,'F'=>6 ,'G'=>7 ,'H'=>8 ,'I'=>9,'U'=>0 );
+  //    $msb = array('A'=>1, 'B'=>2,'C'=>3 ,'D'=>4 ,'E'=>5 ,'F'=>6 ,'G'=>7 ,'H'=>8 ,'I'=>9,'U'=>0 );
+  //    $nonadv=array('A'=>1,'B'=>2,'C'=>4,'D'=>8,'U'=>0);
+  //    $integer=array('U'=>-1,'M'=>-2,'1'=>1,'2'=>2,'3'=>3,'4'=>4,'5'=>5,'6'=>6,'7'=>7,'8'=>8,'9'=>9,'0'=>0);
+  //    $pqrst = array('P'=>1, 'Q'=>2, 'R'=>3, 'S'=>4, 'T'=>5, 'U'=>6, 'V'=>7, 'W'=>8, 'X'=>9,'U'=>0); 
+  //    $pqrs=array('P'=>1,'Q'=>2,'R'=>3,'S'=>4);
+  //    $tf=array('T'=>1,'F'=>2);
+  //    $mpw=array('P'=>1,'Q'=>2,'R'=>3,'S'=>4,'W'=>5,'X'=>6,'Y'=>7,'Z'=>8);
+  //    $i3="0-999";
+  //    $dec="0-999";
 
-    $astring=static::advanced($path,$ans[0]->sl,$data);
+  //   if($ans[0]->omr_scanning_type=="advanced")
+  //   {
+  //   $path='/var/www/html/sri_chaitanya/College/3_view_created_exam/uploads/'.$ans[0]->sl.'/final/'.Auth::user()->CAMPUS_ID.'.iit';
+  //   if(isset($data->STUD_ID))
+  //      $path='/var/www/html/sri_chaitanya/College/3_view_created_exam/uploads/'.$ans[0]->sl.'/final/'.$stud[0]->CAMPUS_ID.'.iit';
+  //   $astring=static::advanced($path,$ans[0]->sl,$data);
 
-     $answer=explode(',', $astring['Line']);
-      $a=1;
-      $answer1=array_slice($answer, 2);
+  //    $answer=explode(',', $astring['Line']);
+  //     $a=1;
+  //     $answer1=array_slice($answer, 2);
 
-    }
-    else
-    {
-    $path='/var/www/html/sri_chaitanya/College/3_view_created_exam/uploads/'.$ans[0]->sl.'/final/'.Auth::user()->CAMPUS_ID.'.dat';
-    if(isset($data->STUD_ID))
-        $path='/var/www/html/sri_chaitanya/College/3_view_created_exam/uploads/'.$ans[0]->sl.'/final/'.$stud[0]->CAMPUS_ID.'.dat';
-    $astring=static::nonadvanced($path,$ans[0]->sl,$data);
-     if(count($astring))
-     $answer1=explode('   ', $astring['Line']);
-      $a=1;
-      $ad=1;
-    }
+  //   }
+  //   else
+  //   {
+  //   $path='/var/www/html/sri_chaitanya/College/3_view_created_exam/uploads/'.$ans[0]->sl.'/final/'.Auth::user()->CAMPUS_ID.'.dat';
+
+  //   if(isset($data->STUD_ID))
+  //       $path='/var/www/html/sri_chaitanya/College/3_view_created_exam/uploads/'.$ans[0]->sl.'/final/'.$stud[0]->CAMPUS_ID.'.dat';
+  //   $astring=static::nonadvanced($path,$ans[0]->sl,$data);
+  //    if(count($astring))
+  //    $answer1=explode('   ', $astring['Line']);
+  //     $a=1;
+  //     $ad=1;
+  //   }
  
-  for($i=0;$i<=count($answer1)-2;$i++) 
-  {
-     $temp='';
-     $arr_num=str_split ($answer1[$i]);
-    foreach($arr_num as $data)
-    {
-      if($ad==1)
-      {
-      $temp.=array_search($data,$nonadv);
-      }
-      else
-      {
-        if(isset($type[$a]))
-        if($type[$a]=="mb")      
-      $temp.=array_search($data,$pqrst);
-        elseif($type[$a]=="i")
-      $temp.=array_search($data,$integer);    
-        else
-      $temp.=array_search($data,$abcd);
-      }
-    }
-    $answer1[$i]=$temp;
-    $ob[]=$answer1[$i];
-    $a++;
-  }
-    return [
-          "ansdata"=>$ob,
-            ];
-  }
+  // for($i=0;$i<=count($answer1)-2;$i++) 
+  // {
+  //    $temp='';
+  //    $arr_num=str_split ($answer1[$i]);
+  //   foreach($arr_num as $data)
+  //   {
+  //     if($ad==1)
+  //     {
+  //     $temp.=array_search($data,$nonadv);
+  //     }
+  //     else
+  //     {
+  //       if(isset($type[$a]))
+  //       if($type[$a]=="mb")      
+  //     $temp.=array_search($data,$pqrst);
+  //       elseif($type[$a]=="i")
+  //     $temp.=array_search($data,$integer);  
+  //       elseif($type[$a]=="m4")
+  //     $temp.=array_search($data,$pqrs);  
+  //       elseif($type[$a]=="tf")
+  //     $temp.=array_search($data,$tf);  
+  //       elseif($type[$a]=="mpw")
+  //     $temp.=array_search($data,$mpw);    
+  //       else
+  //     $temp.=array_search($data,$abcd);
+  //     }
+  //   }
+  //   $answer1[$i]=$temp;
+  //   $ob[]=$answer1[$i];
+  //   $a++;
+  // }
+  //   return [
+  //         "ansdata"=>$ob,
+  //           ];
+  // }
 
 
 // ADVANCED
@@ -614,9 +645,9 @@ $count=sizeof($lines);
 
 $it=$count/4;
 
-$count=1;
+//$count=1;
 
-for($in=0;$in<$it;$in=$in+4)
+for($in=0;$in<$count;$in=$in+4)
 {
    $usnline=trim($lines[$in]);
    $seriesline=trim($lines[$in+1]);
@@ -650,6 +681,15 @@ for($in=0;$in<$it;$in=$in+4)
    $only_usn=$usn_with_flag_array[0];
    $current_usn=$only_usn;
 // return 
+
+
+  // print_r($current_usn.'<br>');
+
+   // if($current_usn=='8170611')
+   // dd($current_usn_flag);
+
+
+
   if(substr(Auth::id(),2)==trim($current_usn)){
     if($current_usn_flag=="blank"){
     return [
@@ -676,6 +716,7 @@ for($in=0;$in<$it;$in=$in+4)
     }
       }
       elseif(substr($data->STUD_ID,2)==trim($current_usn)){
+
          if($current_usn_flag=="blank"){
     return [
     "Flag"=>$current_usn_flag,

@@ -34,7 +34,7 @@ class Subject extends Model
         $stream_id=$data->stream_id;
         $program_id=$data->program_id;
         $subject_id=$data->subject_id;
-        $employee_id=Auth::user()->payroll_id;
+        $employee_id=Auth::user()->PAYROLL_ID;
         $campus_id=Auth::user()->CAMPUS_ID;
         if(isset($data->USER_ID)){
           // return $emp[0]->PAYROLL_ID;
@@ -57,13 +57,14 @@ class Subject extends Model
                 ->where('EMPLOYEE_ID',$employee_id)
                 ->where('SUBJECT_ID',$subject_id)
                 ->pluck('SECTION_ID');
+                // return $section;
 
    if(isset($exam_id))
            $output=DB::table('1_exam_gcsp_id as eg')
                     ->join('1_exam_admin_create_exam as e','e.sl','=','eg.test_sl')
                     ->join('0_test_modes as tm','tm.test_mode_id','=','e.mode')
                     ->join('t_campus as tc','tc.STATE_ID','=','e.state_id')
-                    ->join('employees as em','em.CAMPUS_ID','=','tc.CAMPUS_ID')
+                    ->join('t_employee as em','em.CAMPUS_ID','=','tc.CAMPUS_ID')
                     ->where('eg.GROUP_ID',$group_id)
                     ->where('eg.STREAM_ID',$stream_id)
                     ->where('eg.CLASS_ID',$class_id)
@@ -73,13 +74,15 @@ class Subject extends Model
                     ->whereRaw('FIND_IN_SET(?,tm.test_mode_subjects)', [$subject_id])
                     ->where('eg.test_sl',$exam_id)
                     ->orderBy('eg.test_sl','desc')
-                    ->select('eg.test_sl','tm.marks_upload_final_table_name','e.max_marks','e.model_year','e.paper','e.omr_scanning_type','tm.test_mode_name','tm.test_mode_id')->get();
+                    ->select('eg.test_sl','tm.marks_upload_final_table_name','e.max_marks','e.model_year','e.paper','e.omr_scanning_type','tm.test_mode_name','tm.test_mode_id')
+                    ->distinct()                    
+                    ->get();
           else
         $output=DB::table('1_exam_gcsp_id as eg')
                     ->join('1_exam_admin_create_exam as e','e.sl','=','eg.test_sl')
                     ->join('0_test_modes as tm','tm.test_mode_id','=','e.mode')
                     ->join('t_campus as tc','tc.STATE_ID','=','e.state_id')
-                    ->join('employees as em','em.CAMPUS_ID','=','tc.CAMPUS_ID')
+                    ->join('t_employee as em','em.CAMPUS_ID','=','tc.CAMPUS_ID')
                     ->where('eg.GROUP_ID',$group_id)
                     ->where('eg.STREAM_ID',$stream_id)
                     ->where('eg.CLASS_ID',$class_id)
@@ -88,7 +91,9 @@ class Subject extends Model
                     ->where('em.CAMPUS_ID',$campus_id)
                     ->orderBy('eg.test_sl','desc')                    
                     ->whereRaw('FIND_IN_SET(?,tm.test_mode_subjects)', [$subject_id])
-                    ->select('eg.test_sl','tm.marks_upload_final_table_name','e.max_marks','e.model_year','e.paper','e.omr_scanning_type','tm.test_mode_name','tm.test_mode_id','tc.CAMPUS_ID')->get();
+                    ->select('eg.test_sl','tm.marks_upload_final_table_name','e.max_marks','e.model_year','e.paper','e.omr_scanning_type','tm.test_mode_name','tm.test_mode_id','tc.CAMPUS_ID')
+                    ->distinct()
+                    ->get();
  // return \Request::segment(2);
                     // return $output;
                   $page=$data->page;
@@ -151,6 +156,7 @@ class Subject extends Model
                             $data1->exam_id=$value->sl;
                             $data1->USER_ID=$data->USER_ID;
                             if(isset(Type::teacher_exam_info($data1)['Total'])){
+                              // return "hi";
                             $examlist[$key]['test_code']=$value->test_code;
                             $examlist[$key]['Total_percentage']=Type::teacher_exam_info($data1)['Total'];
                            
@@ -465,7 +471,7 @@ class Subject extends Model
       $result=DB::select("SELECT s.SECTION_ID,cs.section_name FROM IP_Exam_Section as s inner join t_college_section as cs on s.SECTION_ID=cs.SECTION_ID where s.EMPLOYEE_ID='".$data->USER_ID."' ORDER BY (SELECT DISTINCT s.SECTION_ID from 101_mpc_marks as mm inner join scaitsqb.t_student_bio as st on st.ADM_NO=mm.STUD_ID where st.SECTION_ID=s.SECTION_ID ) DESC");
       else
 
-      $result=DB::select("SELECT s.SECTION_ID,cs.section_name FROM IP_Exam_Section as s inner join t_college_section as cs on s.SECTION_ID=cs.SECTION_ID where s.EMPLOYEE_ID='".Auth::user()->payroll_id."' ORDER BY (SELECT DISTINCT s.SECTION_ID from 101_mpc_marks as mm inner join scaitsqb.t_student_bio as st on st.ADM_NO=mm.STUD_ID where st.SECTION_ID=s.SECTION_ID ) DESC");
+      $result=DB::select("SELECT s.SECTION_ID,cs.section_name FROM IP_Exam_Section as s inner join t_college_section as cs on s.SECTION_ID=cs.SECTION_ID where s.EMPLOYEE_ID='".Auth::user()->PAYROLL_ID."' ORDER BY (SELECT DISTINCT s.SECTION_ID from 101_mpc_marks as mm inner join scaitsqb.t_student_bio as st on st.ADM_NO=mm.STUD_ID where st.SECTION_ID=s.SECTION_ID ) DESC");
       // $result=DB::table('IP_Exam_Section as is')
       //               ->join('t_college_section as cs','is.SECTION_ID','=','cs.SECTION_ID')
       //               ->where('is.EMPLOYEE_ID',Auth::user()->payroll_id)

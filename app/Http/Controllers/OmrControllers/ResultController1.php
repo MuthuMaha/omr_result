@@ -30,7 +30,7 @@ class ResultController1 extends Controller
         $filter=Examsection::from('IP_Exam_Section as s')
                     ->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')
                     ->join('t_course_track as t','t.COURSE_TRACK_ID','=','tc.COURSE_TRACK_ID')
-                    ->where('s.EMPLOYEE_ID',Auth::user()->payroll_id)
+                    ->where('s.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)
                     ->where('t.STREAM_ID','<>','')
                     ->where('tc.PROGRAM_ID','<>','')
                     ->select('t.GROUP_ID','t.CLASS_ID','t.STREAM_ID','tc.PROGRAM_ID','s.subject_id');
@@ -48,12 +48,12 @@ class ResultController1 extends Controller
                         $group1[$key]['program']['PROGRAM_NAME']=Program::where('PROGRAM_ID',$value->PROGRAM_ID)->select('PROGRAM_NAME')->get()[0]->PROGRAM_NAME;
                     }
 
-$group=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')->join('t_course_track as t','t.COURSE_TRACK_ID','=','tc.COURSE_TRACK_ID')->where('s.EMPLOYEE_ID',Auth::user()->payroll_id)->pluck('t.GROUP_ID');
+$group=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')->join('scaitsqb.t_student_bio as t','t.SECTION_ID','=','tc.SECTION_ID')->where('s.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)->pluck('t.GROUP_ID');
 $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
         if(count($group)!=0)
         $query->whereIn('GROUP_ID',$group);
-    if(isset($request->subject_id))
-    $query->orwhere('GROUP_ID','5');
+    // if(isset($request->subject_id))
+    // $query->orwhere('GROUP_ID','5');
         $query=$query->get();
         $data=new GroupCollection($query);
         // $data1=array_merge(['GROUP_ID'=>5,'GROUP_NAME'=>"MPC"],['GROUP_ID'=>5,'GROUP_NAME'=>"MPC"]);
@@ -68,10 +68,12 @@ $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
     }
     public function class_year_wrt_group(Request $request, $id)
     {
-         $class=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')->join('t_course_track as t','t.COURSE_TRACK_ID','=','tc.COURSE_TRACK_ID')->where('s.EMPLOYEE_ID',Auth::user()->payroll_id)->pluck('t.CLASS_ID');
-        $query=class_year::whereIn('CLASS_ID',course_track::where('GROUP_ID',$id)->pluck('CLASS_ID'));
-        if(count($class)!=0)
-            $query->whereIn('CLASS_ID',$class);
+        $group_id=$request->group_id;
+         $class=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')->join('scaitsqb.t_student_bio as t','t.SECTION_ID','=','tc.SECTION_ID')->where('s.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)->where('t.GROUP_ID',$group_id)->distinct()->pluck('t.CLASS_ID');
+        $query=class_year::whereIn('CLASS_ID',$class);
+         // $query=$class;
+        // if(count($class)!=0)
+        //     $query->whereIn('CLASS_ID',$class);
         $query=$query->get();
         $data=new StudyClassCollection($query);  
          return [
@@ -86,15 +88,13 @@ $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
     }
     public function stream_wrt_group_class_year(Request $request)
     { 
-      
-         $stream=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')->join('t_course_track as t','t.COURSE_TRACK_ID','=','tc.COURSE_TRACK_ID')->where('s.EMPLOYEE_ID',Auth::user()->payroll_id)->pluck('t.STREAM_ID');  
         //Get group and class year to filter required streams
         $group_id= $request->group_id;
         $class_id= $request->class_id;
-        $query=Stream::whereIn('STREAM_ID',course_track::distinct('STREAM_ID')
-                            ->where('STREAM', '<>','NULL')
-                            ->where('GROUP_ID',$group_id)
-                            ->where('CLASS_ID',$class_id)->get());
+
+         $stream=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')->join('scaitsqb.t_student_bio as t','t.SECTION_ID','=','tc.SECTION_ID')->where('s.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)->where('t.GROUP_ID',$group_id)->where('t.CLASS_ID',$class_id)->pluck('t.STREAM_ID');  
+      
+        $query=Stream::whereIn('STREAM_ID',$stream);
         // if(count($stream)!=0)
         //     $query->whereIn('STREAM_ID',$stream);
         $query=$query->get();
@@ -112,16 +112,17 @@ $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
 
     public function programs_wrt_stream_class_year(Request $request)
     {
-         $program=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')->join('t_course_track as t','t.COURSE_TRACK_ID','=','tc.COURSE_TRACK_ID')->where('s.EMPLOYEE_ID',Auth::user()->payroll_id)->pluck('tc.PROGRAM_ID');  
+         $stream_id= $request->stream_id;
+        $class_id= $request->class_id;
+         $program=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')->join('scaitsqb.t_student_bio as t','t.SECTION_ID','=','tc.SECTION_ID')->where('s.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)->where('t.CLASS_ID',$class_id)->where('t.STREAM_ID',$stream_id)->pluck('tc.PROGRAM_ID');  
 
         //Get stream and class id for required programs
-        $stream_id= $request->stream_id;
-        $class_id= $request->class_id;
+       
         // $query=Program::
         // where('STREAM_ID', '=',$stream_id);
         //     ->where('CLASS_ID',$class_id);
         // if(count($program))
-        $query=Program::where('CLASS_ID',$class_id)->where('STREAM_ID',$stream_id);
+        $query=Program::whereIn('PROGRAM_ID',$program);
         $query=$query->get();
         $data=new ProgramCollection($query); 
         return [

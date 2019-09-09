@@ -33,6 +33,7 @@ class Result extends Authenticatable
 {
    use Notifiable;
    public static function login($data){
+    $start=memory_get_usage();
          $msg="This is old token";
          $campus="";
          $a=[1,2,3,4,56];
@@ -51,16 +52,18 @@ class Result extends Authenticatable
         {
         Auth::guard('tparent')->attempt([ 'ADM_NO' => $data->get('USERNAME'), 'password' => '123456' ]);
         }
-      if(Auth::id() || Auth::guard('t_student')->id()|| Auth::guard('tparent')->id()){
+
+        // dd(Auth::user()->PAYROLL_ID);
+      if(isset(Auth::user()->PAYROLL_ID)|| Auth::guard('t_student')->id()|| Auth::guard('tparent')->id()){
          $c=array();
        self::notify($data->fcm_token,'Login Successfully',$data->USERNAME,$data->user_type);
 
-            if(Auth::id()){
+            if(isset(Auth::user()->PAYROLL_ID)){
                 $client = Employee::
-                                join('t_campus as tc','employees.CAMPUS_ID','=','tc.CAMPUS_ID')
-                                ->join('t_employee as te','te.PAYROLL_ID','=','employees.payroll_id')
-                              ->find(Auth::id());
-                $uc=$client->tokens()->delete();
+                                join('t_campus as tc','t_employee.CAMPUS_ID','=','tc.CAMPUS_ID')
+                                // ->join('t_employee as te','te.PAYROLL_ID','=','employees.payroll_id')
+                              ->where('PAYROLL_ID',Auth::user()->PAYROLL_ID)->get()[0];
+                 $uc=Token::whereUser_id(Auth::user()->PAYROLL_ID)->delete();
                 $campus=$client->CAMPUS_NAME;
                 $details=[
                     'USER_NAME'=>ucfirst(strtolower($client->USER_NAME)),
@@ -76,7 +79,7 @@ class Result extends Authenticatable
             $token=Token::whereUser_id(Auth::id())->pluck('access_token');
             $subject=DB::table('IP_Exam_Section as a')
                       ->join('0_subjects as b','a.SUBJECT_ID','b.SUBJECT_ID')
-                      ->where('a.EMPLOYEE_ID',Auth::user()->payroll_id)
+                      ->where('a.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)
                       ->select('b.subject_id','b.subject_name')
                       ->distinct()
                       ->get(); 
@@ -86,7 +89,7 @@ class Result extends Authenticatable
             if (!$token->count()) {
                 $str=str_random(10);
                 $token=Token::create([
-                    'user_id'=>Auth::id(),
+                    'user_id'=>Auth::user()->PAYROLL_ID,
                     'expiry_time'=>'1',
                     'access_token' => Hash::make($str),
                 ]);
@@ -147,6 +150,8 @@ class Result extends Authenticatable
                     'expiry_time'=>'1',
                     'access_token' => Hash::make($str),
                 ]);
+    $end=memory_get_usage();
+    $peak=memory_get_peak_usage();
              
                     return [
                         'Login' => [
@@ -157,6 +162,9 @@ class Result extends Authenticatable
                             
                             ],
                             'Details'=>$details,
+                            'start'=>$start,
+                            'end'=>$end,
+                            'peak'=>$peak,
                     ];
          
             }
@@ -211,7 +219,7 @@ class Result extends Authenticatable
            if(Auth::id()){
             $subject=DB::table('IP_Exam_Section as a')
                       ->join('0_subjects as b','a.SUBJECT_ID','b.SUBJECT_ID')
-                      ->where('a.EMPLOYEE_ID',Auth::user()->payroll_id)
+                      ->where('a.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)
                       ->select('b.subject_id','b.subject_name')
                       ->distinct()                      
                       ->get();  
@@ -389,9 +397,9 @@ $date=date('Y-M',strtotime($date));
     $res=Exam::where('sl',$data->exam_id)->select('sl','test_code','mode')->get();
     $res1=DB::table('0_test_modes')->where('test_mode_id',$res[0]->mode)->get();
     // $res2=DB::table($res1[0]->marks_upload_final_table_name)->orderBy('ALL_INDIA_RANK','ASC')->where('test_code_sl_id',$data->exam_id)->where('ALL_INDIA_RANK','>',$page)->limit('10')->get();
-    $res2=DB::table($res1[0]->marks_upload_final_table_name)
-              ->join('scaitsqb.t_student_bio as s','s.ADM_NO','=',$res1[0]->marks_upload_final_table_name.'.STUD_ID')
-              ->join('1_exam_admin_create_exam as e','e.sl','=',$res1[0]->marks_upload_final_table_name.'.test_code_sl_id')
+    $res2=DB::table($res1[0]->marks_upload_final_table_name.' as mp')
+              ->join('scaitsqb.t_student_bio as s','s.ADM_NO','=','mp.STUD_ID')
+              ->join('1_exam_admin_create_exam as e','e.sl','=','mp.test_code_sl_id')
               // ->join('t_campus as c','c.CAMPUS_ID','=',$res1[0]->marks_upload_final_table_name.'.this_college_id')
                 ->where('test_code_sl_id',$data->exam_id);
 
@@ -408,7 +416,7 @@ $date=date('Y-M',strtotime($date));
 
 
     $res2->orderBy('ALL_INDIA_RANK','ASC');
-    $res2->select('e.sl','test_code','TOTAL','STUD_ID','PROGRAM_RANK','STREAM_RANK','SEC_RANK','CAMP_RANK','CITY_RANK','DISTRICT_RANK','STATE_RANK','ALL_INDIA_RANK','this_college_id','CAMPUS_NAME','NAME','max_marks');
+    $res2->select('e.sl','test_code','TOTAL','mp.STUD_ID','mp.PROGRAM_RANK','mp.STREAM_RANK','mp.SEC_RANK','mp.CAMP_RANK','mp.CITY_RANK','mp.DISTRICT_RANK','mp.STATE_RANK','mp.ALL_INDIA_RANK','this_college_id','CAMPUS_NAME','NAME','max_marks');
 
     $res2=$res2->paginate($c);
     foreach ($res2 as $key => $value) {

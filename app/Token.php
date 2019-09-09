@@ -24,7 +24,7 @@ class Token extends Model
     protected $fillable=['user_id','user_type','expiry_time','access_token'];
 
     	public function user () {
-			return $this->belongsTo(Employee::class, 'user_id', 'id')->whereRaw('id !=""');
+			return $this->belongsTo(Employee::class, 'user_id', 'PAYROLL_ID')->whereRaw('PAYROLL_ID !=""');
 		}
 		public function student () {
 		return $this->belongsTo(Student::class, 'user_id', 'ADM_NO')->whereRaw('ADM_NO !=""');

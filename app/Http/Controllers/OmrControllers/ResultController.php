@@ -180,15 +180,15 @@ if(isset($arr))
         $employee_id=$request->USER_ID;
         $campus_id=$request->CAMPUS_ID;
             $output=DB::table('ip_exam_section as ie')
-                    ->join('t_employee as em','ie.EMPLOYEE_ID','=','em.payroll_id')
+                    ->join('t_employee as em','ie.EMPLOYEE_ID','=','em.PAYROLL_ID')
                     ->join('t_college_section as tc','ie.SECTION_ID','=','tc.SECTION_ID')
-                    ->join('t_course_track as eg','eg.COURSE_TRACK_ID','tc.COURSE_TRACK_ID')
-                    ->join('t_study_class as sc','sc.CLASS_ID','=','eg.CLASS_ID')
-                    ->join('t_stream as st','st.STREAM_ID','=','eg.STREAM_ID')
+                    // ->join('t_course_track as eg','eg.COURSE_TRACK_ID','tc.COURSE_TRACK_ID')
+                    ->join('t_study_class as sc','sc.CLASS_ID','=','ie.CLASS_ID')
+                    ->join('t_course_group as eg','eg.GROUP_ID','=','ie.GROUP_ID')
+                    ->join('t_stream as st','st.STREAM_ID','=','ie.STREAM_ID')
                     ->join('t_program_name as pn','pn.PROGRAM_ID','=','tc.PROGRAM_ID')
                     ->join('0_subjects as sb','sb.subject_id','=','ie.subject_id')
-                    ->distinct('eg.GROUP_ID','eg.STREAM_ID','eg.CLASS_ID','tc.PROGRAM_ID')
-                    ->select('eg.GROUP_NAME','st.STREAM_NAME','sc.CLASS_NAME','pn.PROGRAM_NAME','sb.subject_name','eg.GROUP_ID','eg.STREAM_ID','eg.CLASS_ID','tc.PROGRAM_ID','ie.subject_id',"PAYROLL_ID","NAME","DESIGNATION");
+                    ->select('eg.GROUP_NAME','st.STREAM_NAME','sc.CLASS_NAME','pn.PROGRAM_NAME','sb.subject_name','ie.GROUP_ID','ie.STREAM_ID','ie.CLASS_ID','tc.PROGRAM_ID','ie.subject_id',"PAYROLL_ID","NAME","DESIGNATION")->distinct();
 
                     if(isset($campus_id))
                     $output->where('em.CAMPUS_ID',$request->CAMPUS_ID);
@@ -202,6 +202,7 @@ if(isset($arr))
                       $outpu[$value->PAYROLL_ID]['DESIGNATION']=$value->DESIGNATION;
                       $outpu[$value->PAYROLL_ID]['Details'][]=$value;
                     }
+                    // return $output;
                     if(isset($outpu))
         return ['Login' => [
                             'response_message'=>"success",
@@ -222,9 +223,9 @@ if(isset($arr))
     {
         if($request->user_type=='employee'){
              $client = Employee::
-                                join('t_campus as tc','employees.CAMPUS_ID','=','tc.CAMPUS_ID')
-                                ->join('t_employee as te','te.PAYROLL_ID','=','employees.payroll_id')
-                              ->where('employees.payroll_id',$request->USER_ID)->get();
+                                join('t_campus as tc','t_employee.CAMPUS_ID','=','tc.CAMPUS_ID')
+                                // ->join('t_employee as te','te.PAYROLL_ID','=','employees.payroll_id')
+                              ->where('t_employee.PAYROLL_ID',$request->USER_ID)->get();
             if(isset($client[0])){
                               // return $client;
                 $campus=$client[0]->CAMPUS_NAME;

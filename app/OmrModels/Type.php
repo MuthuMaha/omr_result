@@ -19,7 +19,7 @@ class Type extends Model
 			    	->pluck('SECTION_ID');   
 		else
 		$section=DB::table('IP_Exam_Section')
-			    	->where('EMPLOYEE_ID',Auth::user()->payroll_id)
+			    	->where('EMPLOYEE_ID',Auth::user()->PAYROLL_ID)
 			    	->pluck('SECTION_ID');
 
     	$exam=Exam::where('sl',$data->exam_id)->select('key_answer_file_long_string as CorrectAnswer','model_year','paper','omr_scanning_type','to_from_range','subject_string_final','sl','test_code','mode','mark_file_long_string','max_marks')->get();

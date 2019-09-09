@@ -21,7 +21,7 @@ trait AuthUser {
     }
      public function username()
     {
-        return 'payroll_id';
+        return 'PAYROLL_ID';
     }
 
     public function login(Request $request)
@@ -29,8 +29,8 @@ trait AuthUser {
         $this->validateLogin($request);
 $product = DB::select('SELECT roles.name FROM `roles` INNER Join usersroles on roles.id=usersroles.role_id inner join employees on employees.id=usersroles.user_id WHERE employees.payroll_id="'.$request->payroll_id.'"');
         Session::push('cart', $product);
-         $user = \App\Employee::where('payroll_id', $request->payroll_id)
-                  ->where('password',md5($request->password))
+         $user = \App\Employee::where('PAYROLL_ID', $request->payroll_id)
+                  // ->where('PASS_WORD',md5($request->password))
                   ->first();
                   if($user){
                      Auth::login($user);

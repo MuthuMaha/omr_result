@@ -21,15 +21,20 @@ public static function AnswerObtain($data,$ans,$type)
       $ad=0;
       $ob=array();
      $abcd = array('A'=>1, 'B'=>2,'C'=>3 ,'D'=>4 ,'E'=>5 ,'F'=>6 ,'G'=>7 ,'H'=>8 ,'I'=>9,'U'=>0 );
+     
      $msb = array('A'=>1, 'B'=>2,'C'=>3 ,'D'=>4 ,'E'=>5 ,'F'=>6 ,'G'=>7 ,'H'=>8 ,'I'=>9,'U'=>0 );
+
      $nonadv=array('A'=>1,'B'=>2,'C'=>4,'D'=>8,'U'=>0);
+
      $integer=array('U'=>-1,'M'=>-2,'1'=>1,'2'=>2,'3'=>3,'4'=>4,'5'=>5,'6'=>6,'7'=>7,'8'=>8,'9'=>9,'0'=>0);
-     $pqrst = array('P'=>1, 'Q'=>2, 'R'=>3, 'S'=>4, 'T'=>5, 'U'=>6, 'V'=>7, 'W'=>8, 'X'=>9,'U'=>0); 
+
+     $pqrst = array('P'=>1, 'Q'=>2, 'R'=>3, 'S'=>4, 'T'=>5,'U'=>0); 
+
      $pqrs=array('P'=>1,'Q'=>2,'R'=>3,'S'=>4,'U'=>0);
-     $tf=array('T'=>1,'F'=>2,'U'=>0);
+
+     $tf=array('T'=>1,'F'=>2,'U'=>0,'TF'=>12);
+
      $mpw=array('P'=>1,'Q'=>2,'R'=>3,'S'=>4,'W'=>5,'X'=>6,'Y'=>7,'Z'=>8,'U'=>0);
-     $i3="0-999";
-     $dec="0-999";
 
     if($ans[0]->omr_scanning_type=="advanced")
     {
@@ -53,7 +58,6 @@ public static function AnswerObtain($data,$ans,$type)
      $answer1=explode('   ', $astring['Line']);
       $a=1;
       $ad=1;
-       // $type[$a]="1";
     }
  
   for($i=0;$i<=count($answer1)-1;$i++) 
@@ -89,15 +93,18 @@ public static function AnswerObtain($data,$ans,$type)
       }
 
     }
-    if(isset($type[$a])){
-    if($type[$a]=="dec")
+    if(isset($type[$a]) && $type[$a]=="dec")
     $answer1[$i]=($temp/100);
-    }
- 
+   //    }
+   else
     $answer1[$i]=$temp;
+   //    }
+      
+   // }
+ 
+    
     $ob[]=$answer1[$i];
     $a++;
-
   }
     return [
           "ansdata"=>$ob,

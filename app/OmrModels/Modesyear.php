@@ -105,7 +105,8 @@ else
 		return $all_sub_marks_array;
 	}
 	public static function markcount($cal,$analysis,$result,$partial,$mark_file_long_string){
-		// return $cal['s'];
+		$cn=array_unique($cal['se']);
+		// return ;
 		$m=3;
 		$negative=explode(',', $mark_file_long_string);
 		$neg_mark=$negative[$m];
@@ -172,20 +173,20 @@ else
 				$t=array_sum($cal['m']);
 		foreach ($cal['b'] as $key => $value) 
 		{
-
+			// dd($value);
 			if(!empty($cal['se']))
 					if($section!=$cal['se'][$sect])
 					{
 			
 						$m=$m+4;
-						if($count==4)
+						if($count==(count($cn)+1))
 							$count=1;
 					$count++;
 					$section=$cal['se'][$sect];
 					$secti="Section".$count;
 					$neg_mark=$negative[$m];					
 					}
-					if($secti=="Section4")
+					if($secti=="Section".(count($cn)+1))
 						$secti="Section1";
 					// return $cal['s'];
 					// $a;
@@ -313,6 +314,7 @@ else
 
 		}
 		$ar3=$count;
+		// dd($count);
 		// foreach ($ar1 as $key => $value) 
 		// {
 			foreach ($ar2 as $key1 => $value1) 

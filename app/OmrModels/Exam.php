@@ -16,6 +16,8 @@ class Exam extends Model
   protected $primaryKey='sl';
   public $timestamps=false;
   public static function total($data){
+    $start= memory_get_usage(false); 
+    $start_time = microtime(true);
 $stud1=Student::where('ADM_NO',$data->USER_ID)->select('ADM_NO','CAMPUS_ID','CAMPUS_NAME','PROGRAM_NAME','GROP','NAME')->get();
 if(isset($stud[0])){
 $ADM_NO=$stud1[0]->ADM_NO;
@@ -103,6 +105,11 @@ $CAMPUS_ID=$stud1[0]->CAMPUS_ID;
         $res_key[$a][ "Mode_id"] = $modeid['test_mode_id'][$key];
         $a++;
         }
+
+               $end_time = microtime(true);
+               $execution_time = ($end_time - $start_time);
+               $end=memory_get_usage(false);
+               $used_memory_bytes=$end-$start;
         if(empty($res_key))
           return [
                         'Mode' =>['Login'=> [
@@ -121,11 +128,19 @@ $CAMPUS_ID=$stud1[0]->CAMPUS_ID;
                             ],
                             "data"=>$res_key
                             ,
+                            'used'=>Tparent::get_proper_format($used_memory_bytes),
+                           
+                            'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
+                            'execution_time'=>$execution_time,
                           ],
         "Marklist"=>['Login' => [
                             'response_message'=>"success",
                             'response_code'=>"1",
-                            ],"data"=>$marklist],
+                            ],"data"=>$marklist,
+                            'used'=>Tparent::get_proper_format($used_memory_bytes),
+                           
+                            'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
+                            'execution_time'=>$execution_time,],
         ];
     
   }
@@ -244,6 +259,8 @@ SELECT * FROM `0_test_types` as tt where `test_type_id` <> 0 ORDER BY test_type_
 
   }
   public static function NonAdvanceAnswer($data,$ans,$marked,$id,$result,$table,$exam_id,$STUD_ID,$smark){
+    $start= memory_get_usage(false); 
+    $start_time = microtime(true);
     $markf=Modesyear::exam_info($smark,0)['CorrectMark'];
 
     $result=str_split($result);
@@ -325,6 +342,11 @@ SELECT * FROM `0_test_types` as tt where `test_type_id` <> 0 ORDER BY test_type_
       // $sb=array_merge($ans[0]->subject_string_final,$subject_name);
       $subject_name=array_flip($subject_name);
       $subject_name=array_change_key_case($subject_name,CASE_UPPER);
+
+               $end_time = microtime(true);
+               $execution_time = ($end_time - $start_time);
+               $end=memory_get_usage(false);
+               $used_memory_bytes=$end-$start;
     return 
                      ['Login' => [
                             'response_message'=>"success",
@@ -333,10 +355,16 @@ SELECT * FROM `0_test_types` as tt where `test_type_id` <> 0 ORDER BY test_type_
                             "subject_id"=>$data[9],
                             "subject_name"=>array_flip($subject_name),
                             "mark_obtained"=>$ob[0]->{strtoupper($sub)}."/".$dr[$sub],
+                            'used'=>Tparent::get_proper_format($used_memory_bytes),
+                           
+                            'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
+                            'execution_time'=>$execution_time,
                           ];
   }
   public static function AdvanceAnswer($data,$ans,$marked,$id,$result,$table,$exam_id,$STUD_ID,$smark){
     // return $data[1];
+    $start= memory_get_usage(false); 
+    $start_time = microtime(true);
     $markf=Modesyear::exam_info($smark,0)['CorrectMark'];
     $sbi=array();
     $a=0;
@@ -451,6 +479,11 @@ SELECT * FROM `0_test_types` as tt where `test_type_id` <> 0 ORDER BY test_type_
       }
       $new=array_values($new);
       $dr=array_combine($subject_name, explode(',',$ob[0]->max_marks));
+      
+               $end_time = microtime(true);
+               $execution_time = ($end_time - $start_time);
+               $end=memory_get_usage(false);
+               $used_memory_bytes=$end-$start;
       return 
                      ['Login' => [
                             'response_message'=>"success",
@@ -460,6 +493,10 @@ SELECT * FROM `0_test_types` as tt where `test_type_id` <> 0 ORDER BY test_type_
                             'subject_id'=>$sbi,
                             "subject_name"=>array_values($subject_name),
                             "mark_obtained"=>$ob[0]->{strtoupper($sub)}."/".$dr[strtoupper($sub)],
+                            'used'=>Tparent::get_proper_format($used_memory_bytes),
+                           
+                            'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
+                            'execution_time'=>$execution_time,
                           ];
   }
   // public static function AnswerObtain($data,$ans,$type)

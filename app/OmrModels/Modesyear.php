@@ -13,7 +13,8 @@ class Modesyear extends Model
   public $timestamps=false;
   
     public static function exam_info($data,$ch){
-    	
+    	 $start= memory_get_usage(false); 
+    $start_time = microtime(true);
     	$exam=Exam::where('sl',$data->exam_id)->select('key_answer_file_long_string as CorrectAnswer','model_year','paper','omr_scanning_type','to_from_range','subject_string_final','sl','test_code','mode','mark_file_long_string','max_marks')->get();
     	// return $exam;
     	$table=Mode::where('test_mode_id',$exam[0]->mode)->pluck('marks_upload_final_table_name');
@@ -105,6 +106,8 @@ else
 		return $all_sub_marks_array;
 	}
 	public static function markcount($cal,$analysis,$result,$partial,$mark_file_long_string){
+		 $start= memory_get_usage(false); 
+    $start_time = microtime(true);
 		$cn=array_unique($cal['se']);
 		// return ;
 		$m=3;
@@ -350,6 +353,10 @@ else
 		
 		}
 
+               $end_time = microtime(true);
+               $execution_time = ($end_time - $start_time);
+               $end=memory_get_usage(false);
+               $used_memory_bytes=$end-$start;
 		return ['Login' => [
                             'response_message'=>"success",
                             'response_code'=>"1",
@@ -367,6 +374,10 @@ else
 			// "Missed_Partial"=>$am,
 			// "Exam_Total_Mark"=>$t,
 			"Analysis"=>$analysis,
+            'used'=>Tparent::get_proper_format($used_memory_bytes),
+           
+            'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
+            'execution_time'=>$execution_time,
 		];
 	}
 	public static function strongweak($cal,$ans,$max){

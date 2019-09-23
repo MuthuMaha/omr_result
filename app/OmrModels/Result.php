@@ -33,7 +33,8 @@ class Result extends Authenticatable
 {
    use Notifiable;
    public static function login($data){
-    $start=memory_get_usage();
+    $start= memory_get_usage(false); 
+    $start_time = microtime(true);
          $msg="This is old token";
          $campus="";
          $a=[1,2,3,4,56];
@@ -83,6 +84,11 @@ class Result extends Authenticatable
                       ->select('b.subject_id','b.subject_name')
                       ->distinct()
                       ->get(); 
+
+               $end_time = microtime(true);
+               $execution_time = ($end_time - $start_time);
+               $end=memory_get_usage(false);
+               $used_memory_bytes=$end-$start;
            if($uc){
              $msg='Token expired and New Token generated';
            }
@@ -103,6 +109,10 @@ class Result extends Authenticatable
                             
                             ],
                             'Details'=>$details,
+                            'used'=>Tparent::get_proper_format($used_memory_bytes),
+                           
+                            'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
+                            'execution_time'=>$execution_time,
                             'Subject'=>$subject,
                     ];
                     else
@@ -111,10 +121,14 @@ class Result extends Authenticatable
                             'response_message'=>"success",
                             'response_code'=>"1",
                             'Token'=>$token->access_token,
-              'Version'=>$version->version_number,
+                            'Version'=>$version->version_number,
                             
                             ],
                             'Details'=>$details,
+                            'used'=>Tparent::get_proper_format($used_memory_bytes),
+                           
+                            'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
+                            'execution_time'=>$execution_time,
                             // 'Subject'=>$subject,
                             'Group'=>new GroupCollection(DB::table('t_course_group')->get())
                     ];
@@ -150,21 +164,24 @@ class Result extends Authenticatable
                     'expiry_time'=>'1',
                     'access_token' => Hash::make($str),
                 ]);
-    $end=memory_get_usage();
-    $peak=memory_get_peak_usage();
-             
+   
+               $end_time = microtime(true);
+               $execution_time = ($end_time - $start_time);
+               $end=memory_get_usage(false);
+               $used_memory_bytes=$end-$start;
                     return [
                         'Login' => [
                             'response_message'=>"success",
                             'response_code'=>"1",
                             'Token'=>$token->access_token,
-              'Version'=>$version->version_number,
+                            'Version'=>$version->version_number,
                             
                             ],
                             'Details'=>$details,
-                            'start'=>$start,
-                            'end'=>$end,
-                            'peak'=>$peak,
+                            'used'=>Tparent::get_proper_format($used_memory_bytes),
+                           
+                            'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
+                            'execution_time'=>$execution_time,
                     ];
          
             }
@@ -202,6 +219,11 @@ class Result extends Authenticatable
                     'expiry_time'=>'1',
                     'access_token' => Hash::make($str),
                 ]);
+
+               $end_time = microtime(true);
+               $execution_time = ($end_time - $start_time);
+               $end=memory_get_usage(false);
+               $used_memory_bytes=$end-$start;
                     return [
                         'Login' => [
                             'response_message'=>"success",
@@ -211,6 +233,10 @@ class Result extends Authenticatable
                             
                             ],
                             'Details'=>$details,
+                            'used'=>Tparent::get_proper_format($used_memory_bytes),
+                           
+                            'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
+                            'execution_time'=>$execution_time,
                           
                     ];
          
@@ -223,6 +249,11 @@ class Result extends Authenticatable
                       ->select('b.subject_id','b.subject_name')
                       ->distinct()                      
                       ->get();  
+
+               $end_time = microtime(true);
+               $execution_time = ($end_time - $start_time);
+               $end=memory_get_usage(false);
+               $used_memory_bytes=$end-$start;
                     return [
                         'Login' => [
                             'response_message'=>"success",
@@ -232,6 +263,10 @@ class Result extends Authenticatable
                         
                             ],
                         'Details'=>$details,
+                            'used'=>Tparent::get_proper_format($used_memory_bytes),
+                           
+                            'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
+                            'execution_time'=>$execution_time,
                         'Subject'=>$subject,
                     ];
                   }
@@ -245,6 +280,10 @@ class Result extends Authenticatable
                         
                             ],
                         'Details'=>$details, 
+                            'used'=>Tparent::get_proper_format($used_memory_bytes),
+                           
+                            'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
+                            'execution_time'=>$execution_time,
                     ];
                   }
         }
@@ -337,6 +376,9 @@ class Result extends Authenticatable
    }
    public static function mdexamlist($data)
    {
+    $r[0]="";
+      $rg=$data->rank_generated;
+
     if(isset($data->date))
       $date=$data->date;
     else
@@ -344,8 +386,9 @@ class Result extends Authenticatable
     $c=DB::table('result_application_blockcount')->where('API','mdexamlist')->pluck('Block_Count')[0];
     $r=array();
     $res=DB::table('1_exam_admin_create_exam')
-            ->where('result_generated1_no0',1)
-            ->select('sl','test_code','start_date','max_marks','mode');
+            ->select('sl','test_code',DB::raw("DATE_FORMAT(e.start_date,'%d-%m-%Y') as start_date"),'max_marks','mode');
+            if(isset($rg))
+            $res->where('result_generated1_no0',$rg);
             if(isset($data->mode_id))
             $res->where('mode',$data->mode_id);
           if(isset($data->test_type))
@@ -353,7 +396,7 @@ class Result extends Authenticatable
           
             $res->where('start_date','like',$date.'%');
            
-
+            $res->orderBy('sl','DESC');
             $res=$res->paginate($c);
             foreach ($res as $key => $value) {
              $b=DB::table('0_test_modes')->where('test_mode_id',$value->mode)->get();
@@ -370,6 +413,8 @@ class Result extends Authenticatable
             $r[$key]->sl=$value->sl;
             $r[$key]->test_code=$value->test_code;
             $r[$key]->start_date=$value->start_date;
+            if($r[$key]->total_percentage<1)
+              unset($r[$key]);
 
             }
             
@@ -378,7 +423,7 @@ $date=date('Y-M',strtotime($date));
                             'response_message'=>"success",
                             'response_code'=>"1",
                             ],
-                 "Data"=>$r,
+                 "Data"=>array_values($r),
                  "Total_page"=>$res->lastPage(),
                  "Exam_date"=>$date,
                  "Block_Count"=>$c

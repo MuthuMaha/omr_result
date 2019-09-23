@@ -48,7 +48,9 @@ class ResultController1 extends Controller
                         $group1[$key]['program']['PROGRAM_NAME']=Program::where('PROGRAM_ID',$value->PROGRAM_ID)->select('PROGRAM_NAME')->get()[0]->PROGRAM_NAME;
                     }
 
-$group=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')->join('scaitsqb.t_student_bio as t','t.SECTION_ID','=','tc.SECTION_ID')->where('s.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)->pluck('t.GROUP_ID');
+$group=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')
+// ->join('scaitsqb.t_student_bio as t','t.SECTION_ID','=','tc.SECTION_ID')
+->where('s.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)->pluck('s.GROUP_ID');
 $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
         if(count($group)!=0)
         $query->whereIn('GROUP_ID',$group);
@@ -69,7 +71,9 @@ $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
     public function class_year_wrt_group(Request $request, $id)
     {
         $group_id=$request->group_id;
-         $class=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')->join('scaitsqb.t_student_bio as t','t.SECTION_ID','=','tc.SECTION_ID')->where('s.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)->where('t.GROUP_ID',$group_id)->distinct()->pluck('t.CLASS_ID');
+         $class=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')
+         // ->join('scaitsqb.t_student_bio as t','t.SECTION_ID','=','tc.SECTION_ID')
+         ->where('s.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)->where('s.GROUP_ID',$group_id)->distinct()->pluck('s.CLASS_ID');
         $query=class_year::whereIn('CLASS_ID',$class);
          // $query=$class;
         // if(count($class)!=0)
@@ -92,7 +96,9 @@ $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
         $group_id= $request->group_id;
         $class_id= $request->class_id;
 
-         $stream=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')->join('scaitsqb.t_student_bio as t','t.SECTION_ID','=','tc.SECTION_ID')->where('s.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)->where('t.GROUP_ID',$group_id)->where('t.CLASS_ID',$class_id)->pluck('t.STREAM_ID');  
+         $stream=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')
+         // ->join('scaitsqb.t_student_bio as t','t.SECTION_ID','=','tc.SECTION_ID')
+         ->where('s.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)->where('s.GROUP_ID',$group_id)->where('s.CLASS_ID',$class_id)->pluck('s.STREAM_ID');  
       
         $query=Stream::whereIn('STREAM_ID',$stream);
         // if(count($stream)!=0)
@@ -114,8 +120,10 @@ $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
     {
          $stream_id= $request->stream_id;
         $class_id= $request->class_id;
-         $program=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')->join('scaitsqb.t_student_bio as t','t.SECTION_ID','=','tc.SECTION_ID')->where('s.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)->where('t.CLASS_ID',$class_id)->where('t.STREAM_ID',$stream_id)->pluck('tc.PROGRAM_ID');  
-
+         $program=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')
+         // ->join('scaitsqb.t_student_bio as t','t.SECTION_ID','=','tc.SECTION_ID')
+         ->where('s.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)->where('s.CLASS_ID',$class_id)->where('s.STREAM_ID',$stream_id)->pluck('s.PROGRAM_ID');  
+// dd($class_id);
         //Get stream and class id for required programs
        
         // $query=Program::
@@ -139,25 +147,31 @@ $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
     public function search(Request $request){
         $userid=$request->USERID;
         if($request->user_type=="employee" || $request->user_type=="director" ){
-              // $res=DB::table('t_employee')->where('PAYROLL_ID','like','%'.$userid.)
-            $res=DB::select('select PAYROLL_ID as USERID,USER_NAME as NAME from t_employee where PAYROLL_ID like "%'.$userid.'%" or USER_NAME like "%'.$userid.'%" limit 50');
+              $res=DB::table('t_employee as e')
+              ->join('t_campus as tc','e.CAMPUS_ID','=','tc.CAMPUS_ID')
+            ->where('e.PAYROLL_ID','like','%'.$userid.'%');
+            // $res=DB::select('select PAYROLL_ID as USERID,USER_NAME as NAME from t_employee where PAYROLL_ID like "%'.$userid.'%" or USER_NAME like "%'.$userid.'%" limit 50');
         // $fc=substr($userid,0,3);
         // $cl=substr($userid,3,8);
        //  $res=Temployee::where('NAME','<>','');
        // if (!preg_match('/[^A-Z]/', $fc) && !preg_match('/[^0-9]/', $cl))
        //   $res->where('PAYROLL_ID','like','%'.$request->USERID.'%');
        //  else
-       //   $res->where('NAME','like','%'.$request->USERID.'%');
+         $res->orwhere('e.USER_NAME','like','%'.$request->USERID.'%');
 
-       //   $res=$res->select('PAYROLL_ID as USERID','NAME')->limit(50)->get();
+         $res=$res->select('e.PAYROLL_ID as USERID','e.NAME','tc.CAMPUS_NAME','e.CAMPUS_ID')->limit(50)->get();
              }
         else{
-         $res=Student::where('NAME','<>','');
+         $res=DB::table('scaitsqb.t_student_bio as st')->
+              join('t_campus as tc','st.CAMPUS_ID','=','tc.CAMPUS_ID')
+
+         ->where('st.NAME','<>','');
      if (!preg_match('/[^0-9]/', $userid[0]))   
-         $res->where('ADM_NO','like','%'.$request->USERID.'%'); 
+         $res->where('st.ADM_NO','like','%'.$request->USERID.'%'); 
         else
-         $res->where('NAME','like','%'.$request->USERID.'%');
-         $res=$res->select('ADM_NO as USERID','NAME')->limit(50)->get();
+         $res->where('st.NAME','like','%'.$request->USERID.'%');
+
+         $res=$res->select('st.ADM_NO as USERID','st.NAME','tc.CAMPUS_ID','tc.CAMPUS_NAME')->limit(50)->get();
              }
         return [
                      'Login' => [

@@ -12,7 +12,8 @@ class Type extends Model
     protected $primaryKey='test_type_id';
 
     public static function teacher_exam_info($data)
-    {
+    { $start= memory_get_usage(false); 
+    $start_time = microtime(true);
     	if(isset($data->USER_ID))
     	$section=DB::table('IP_Exam_Section')
 			    	->where('EMPLOYEE_ID',$data->USER_ID)
@@ -320,7 +321,8 @@ class Type extends Model
 		];
 	}
 	public static function strongweak($ans,$sub,$section)
-	{	
+	{	$start= memory_get_usage(false); 
+    $start_time = microtime(true);
 		$range=DB::table('percentage_range')->where('id',1)->get();
 		$range_from=$range[0]->range_from;
 		$range_to=$range[0]->range_to;
@@ -432,6 +434,11 @@ class Type extends Model
 				$average.=substr($ap[$key]['Subject'],0,3).',';
 			$a++;
 		}
+		
+               $end_time = microtime(true);
+               $execution_time = ($end_time - $start_time);
+               $end=memory_get_usage(false);
+               $used_memory_bytes=$end-$start;
 		return [
 			'Login' => [
                             'response_message'=>"success",
@@ -449,6 +456,10 @@ class Type extends Model
 			// "weak_section"=>$sectionweak,
 			"average_subject"=>strtoupper($average),
 			"strong_subject"=>strtoupper($strong),
+            'used'=>Tparent::get_proper_format($used_memory_bytes),
+           
+            'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
+            'execution_time'=>$execution_time,
 			// "strong_section"=>$sectionstrong,
 				],
 			// "strong_subject"=>$strong,

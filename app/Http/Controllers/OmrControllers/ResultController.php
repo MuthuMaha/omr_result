@@ -182,13 +182,12 @@ if(isset($arr))
             $output=DB::table('ip_exam_section as ie')
                     ->join('t_employee as em','ie.EMPLOYEE_ID','=','em.PAYROLL_ID')
                     ->join('t_college_section as tc','ie.SECTION_ID','=','tc.SECTION_ID')
-                    // ->join('t_course_track as eg','eg.COURSE_TRACK_ID','tc.COURSE_TRACK_ID')
                     ->join('t_study_class as sc','sc.CLASS_ID','=','ie.CLASS_ID')
                     ->join('t_course_group as eg','eg.GROUP_ID','=','ie.GROUP_ID')
                     ->join('t_stream as st','st.STREAM_ID','=','ie.STREAM_ID')
-                    ->join('t_program_name as pn','pn.PROGRAM_ID','=','tc.PROGRAM_ID')
+                    ->join('t_program_name as pn','pn.PROGRAM_ID','=','ie.PROGRAM_ID')
                     ->join('0_subjects as sb','sb.subject_id','=','ie.subject_id')
-                    ->select('eg.GROUP_NAME','st.STREAM_NAME','sc.CLASS_NAME','pn.PROGRAM_NAME','sb.subject_name','ie.GROUP_ID','ie.STREAM_ID','ie.CLASS_ID','tc.PROGRAM_ID','ie.subject_id',"PAYROLL_ID","NAME","DESIGNATION")->distinct();
+                    ->select('eg.GROUP_NAME','st.STREAM_NAME','sc.CLASS_NAME','pn.PROGRAM_NAME','sb.subject_name','ie.GROUP_ID','ie.STREAM_ID','ie.CLASS_ID','ie.PROGRAM_ID','ie.subject_id',"PAYROLL_ID","NAME","DESIGNATION")->distinct();
 
                     if(isset($campus_id))
                     $output->where('em.CAMPUS_ID',$request->CAMPUS_ID);

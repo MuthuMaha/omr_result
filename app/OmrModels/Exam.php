@@ -115,11 +115,11 @@ $CAMPUS_ID=$stud1[0]->CAMPUS_ID;
                         'Mode' =>['Login'=> [
                             'response_message'=>"No Record Found",
                             'response_code'=>"1"
-                           ],"data"=>array()],
+                           ],"data"=>array(), "Exam_date"=>date('Y-M',strtotime($date))],
                              'Marklist' =>['Login'=> [
                             'response_message'=>"Exam List Not Found",
                             'response_code'=>"1"
-                           ],"data"=>array()],
+                           ],"data"=>array(), "Exam_date"=>date('Y-M',strtotime($date))],
                     ];
     return [
         "Mode"=>['Login' => [
@@ -127,7 +127,7 @@ $CAMPUS_ID=$stud1[0]->CAMPUS_ID;
                             'response_code'=>"1",
                             ],
                             "data"=>$res_key
-                            ,
+                            , "Exam_date"=>date('Y-M',strtotime($date)),
                             'used'=>Tparent::get_proper_format($used_memory_bytes),
                            
                             'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
@@ -137,6 +137,7 @@ $CAMPUS_ID=$stud1[0]->CAMPUS_ID;
                             'response_message'=>"success",
                             'response_code'=>"1",
                             ],"data"=>$marklist,
+                              "Exam_date"=>date('Y-M',strtotime($date)),
                             'used'=>Tparent::get_proper_format($used_memory_bytes),
                            
                             'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
@@ -259,6 +260,7 @@ SELECT * FROM `0_test_types` as tt where `test_type_id` <> 0 ORDER BY test_type_
 
   }
   public static function NonAdvanceAnswer($data,$ans,$marked,$id,$result,$table,$exam_id,$STUD_ID,$smark){
+    $ob=array();
     $start= memory_get_usage(false); 
     $start_time = microtime(true);
     $markf=Modesyear::exam_info($smark,0)['CorrectMark'];
@@ -301,16 +303,20 @@ SELECT * FROM `0_test_types` as tt where `test_type_id` <> 0 ORDER BY test_type_
       // $list['Exam_Name']=$test_code;
       // dd($ans);
       // $list['Subject'][$subject][$i]= new \stdClass();
+       if(isset($marked['ansdata'][$ans])){
       $list[$subject][$i]['question_no']=$i;
       // $list[$subject][$i]->{'subject_name'}=$subject;
       $list[$subject][$i]['question_type']="";
+      if(isset($markf[$i-1]))
       $list[$subject][$i]['obtained_mark']=$markf[$i-1];
 
       $list[$subject][$i]['correct_answer']=$correct[$ans];
+      if(isset($marked['ansdata'][$ans]))
       $list[$subject][$i]['marked_answer']=$marked['ansdata'][$ans];
        // $list['Number_of_Subjects']=count($subject_name);
-      // if(isset($result[$i]))
+      if(isset($result[$i-1]))
        $list[$subject][$i]['result_string']=$result[$i-1];
+   }
 
       $i++;
       $ans++;
@@ -338,6 +344,7 @@ SELECT * FROM `0_test_types` as tt where `test_type_id` <> 0 ORDER BY test_type_
       $new=array_values($new);
 
       $new=array_values($new);
+      if(isset($ob[0])){
       $dr=array_combine($subject_name, explode(',',$ob[0]->max_marks));
       // $sb=array_merge($ans[0]->subject_string_final,$subject_name);
       $subject_name=array_flip($subject_name);
@@ -360,6 +367,14 @@ SELECT * FROM `0_test_types` as tt where `test_type_id` <> 0 ORDER BY test_type_
                             'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
                             'execution_time'=>$execution_time,
                           ];
+                        }
+                        else{
+                          return ['Login' => [
+                            'response_message'=>"No record found",
+                            'response_code'=>"0",
+                            ],
+                            'data'=>array()];
+                        }
   }
   public static function AdvanceAnswer($data,$ans,$marked,$id,$result,$table,$exam_id,$STUD_ID,$smark){
     // return $data[1];

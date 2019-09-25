@@ -248,7 +248,7 @@ class Type extends Model
 					$secti="Section".$count;
 					$neg_mark=$negative[$m];
 					}
-					if($secti=="Section4")
+					if($secti=="Section".(count($te)+1))
 						$secti="Section1";
 				if($range[$b]==$key){
 					$b++;
@@ -348,7 +348,7 @@ class Type extends Model
 	   			if($ans['Sectionwise_total'][$ar2[$key2]]['Section'.$i]!=0)
 	   			$ans[$ar2[$key2]]['Section'.$i][$ar1[$key]]=number_format((float) ($ans[$ar1[$key]][$ar2[$key2]]['Section'.$i]/$ans['Sectionwise_total'][$ar2[$key2]]['Section'.$i])*100, '2', '.', ''); 
 	   			else
-	   			$ans[$ar2[$key2]]['Section'.$i][$ar1[$key]]=0.01;
+	   			$ans[$ar2[$key2]]['Section'.$i][$ar1[$key]]=number_format((float)(0.0001),'2','.','');
 	   			$ans[$ar2[$key2]]['Section'.$i]['Section']='Sec'.$i;
 
 	   	   		}	

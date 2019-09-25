@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Http\Resources\NotifyCollection;
 use App\BaseModels\Student;
 use App\BaseModels\Campus;
+use App\Apicache;
 class Fcmtoken extends Model
 {
     protected $table='fcm_tokens';
@@ -30,6 +31,9 @@ class Fcmtoken extends Model
     }
     public static function sendmessage($data)
     {
+      if($data->notify_type==1)
+      $up=Apicache::where('id','<>','')->update(['total_percentage'=>'']);
+
       $abc=array();
       $api_key=Exam::where('sl',$data->exam_id)->pluck('api_key')[0];
       if($data->api_key==$api_key){

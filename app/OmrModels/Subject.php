@@ -4,6 +4,7 @@ namespace App\OmrModels;
 use Auth;
 use DB;
 use App\Temployee;
+use App\BaseModels\Program;
 
 use Illuminate\Database\Eloquent\Model;
 include_once($_SERVER['DOCUMENT_ROOT'].'/sri_chaitanya/Exam_Admin/3_view_created_exam/z_ias_format.php');
@@ -17,14 +18,14 @@ class Subject extends Model
         return strtoupper($value);
     }
     public static function teacher_percentage($data,$change){
-    $start= memory_get_usage(false); 
-    $start_time = microtime(true);
+    // $start= memory_get_usage(false); 
+    // $start_time = microtime(true);
       $emp=Temployee::
                   join('t_campus as tc','tc.CAMPUS_ID','=','t_employee.CAMPUS_ID')
                   ->where('PAYROLL_ID',$data->USER_ID)
                   ->select('USER_NAME','DESIGNATION','PAYROLL_ID','tc.CAMPUS_ID','CAMPUS_NAME')
                   ->get();
-      // return $emp;
+
         $studentlist=array();
         $studentlist1=array();
         $output1=array();
@@ -39,7 +40,6 @@ class Subject extends Model
         $employee_id=Auth::user()->PAYROLL_ID;
         $campus_id=Auth::user()->CAMPUS_ID;
         if(isset($data->USER_ID)){
-          // return $emp[0]->PAYROLL_ID;
         $employee_id=$emp[0]->PAYROLL_ID;
         $campus_id=$emp[0]->CAMPUS_ID;
         }
@@ -59,7 +59,6 @@ class Subject extends Model
                 ->where('EMPLOYEE_ID',$employee_id)
                 ->where('SUBJECT_ID',$subject_id)
                 ->pluck('SECTION_ID');
-                // return $section;
 
    if(isset($exam_id))
            $output=DB::table('1_exam_gcsp_id as eg')
@@ -96,29 +95,20 @@ class Subject extends Model
                     ->select('eg.test_sl','tm.marks_upload_final_table_name','e.max_marks','e.model_year','e.paper','e.omr_scanning_type','tm.test_mode_name','tm.test_mode_id','tc.CAMPUS_ID')
                     ->distinct()
                     ->get();
- // return \Request::segment(2);
-                    // return $output;
+
                   $page=$data->page;
 
                  if($change=="p"){
                   if(isset($data->exam_id))
-                  return static::examstudent($output,$subject_name,$section,$data->exam_id,$data->section_id,$test_type,$mode,$date,$page,$campus_id,$emp)['Result'];  
+                  return static::examstudent($output,$subject_name,$section,$data->exam_id,$data->section_id,$test_type,$mode,$date,$page,$campus_id,$emp,$data)['Result'];  
                 else
-                   return static::examstudent($output,$subject_name,$section,"0",$data->section_id,$test_type,$mode,$date,$page,$campus_id,$emp)['Result'];  
+                   return static::examstudent($output,$subject_name,$section,"0",$data->section_id,$test_type,$mode,$date,$page,$campus_id,$emp,$data)['Result'];  
                 }
                  elseif($change=="e"){
                   $test=array();
                   $block_no=array();
-                  $exam=static::examstudent($output,$subject_name,$section,$data->exam_id,$data->section_id,$test_type,$mode,$date,$page,$campus_id,$emp)['ExamList'];  
-                  // return $exam;
-                  // return [
-
-                  //    'Login' => [
-                  //           'response_message'=>"success",
-                  //           'response_code'=>"1",
-                  //           ],
-                  //   "Data"=>$exam,
-                  //       ];
+                  $exam=static::examstudent($output,$subject_name,$section,$data->exam_id,$data->section_id,$test_type,$mode,$date,$page,$campus_id,$emp,$data)['ExamList'];  
+                 
 
                         $block_no=DB::table('Result_Application_BlockCount')->where('API','examlist')->pluck('Block_Count');
                   $max=$block_no[0]*$page;
@@ -141,8 +131,6 @@ class Subject extends Model
                             $examlist[$key]['test_code']=$value->test_code;
                             $examlist[$key]['Total_percentage']=Type::teacher_exam_info($data1)['Total'];
                            
-                            // $examlist[$key]['Exam_Info']=Type::teacher_exam_info($data1);
-                            //date("d-m-Y", strtotime($originalDate));
                             $examlist[$key]['test_sl']=$value->sl;
                             $examlist[$key]['start_date']=date("d-m-Y",strtotime($value->start_date));
                             $examlist[$key]['test_type_name']=$value->test_type_name;
@@ -158,12 +146,9 @@ class Subject extends Model
                             $data1->exam_id=$value->sl;
                             $data1->USER_ID=$data->USER_ID;
                             if(isset(Type::teacher_exam_info($data1)['Total'])){
-                              // return "hi";
                             $examlist[$key]['test_code']=$value->test_code;
                             $examlist[$key]['Total_percentage']=Type::teacher_exam_info($data1)['Total'];
                            
-                            // $examlist[$key]['Exam_Info']=Type::teacher_exam_info($data1);
-                            
                             $examlist[$key]['test_sl']=$value->sl;
                             $examlist[$key]['start_date']=date("d-m-Y",strtotime($value->start_date));
                             $examlist[$key]['test_type_name']=$value->test_type_name;
@@ -174,10 +159,10 @@ class Subject extends Model
                       }
                   }
 
-               $end_time = microtime(true);
-               $execution_time = ($end_time - $start_time);
-               $end=memory_get_usage(false);
-               $used_memory_bytes=$end-$start;
+               // $end_time = microtime(true);
+               // $execution_time = ($end_time - $start_time);
+               // $end=memory_get_usage(false);
+               // $used_memory_bytes=$end-$start;
 
                   if(empty($examlist))
                               return [
@@ -189,10 +174,10 @@ class Subject extends Model
                                   "Totalpage"=>0,
                                   "Block_Count"=>0,
                                   "Exam"=>array(),
-                            'used'=>Tparent::get_proper_format($used_memory_bytes),
+                            // 'used'=>Tparent::get_proper_format($used_memory_bytes),
                            
-                            'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
-                            'execution_time'=>$execution_time,
+                            // 'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
+                            // 'execution_time'=>$execution_time,
                                    ];
                   else
                   return [
@@ -205,15 +190,14 @@ class Subject extends Model
                     "Totalpage"=>ceil((count($exam))/($block_no[0]+1)),
                     "Block_Count"=>$block_no[0],
                     "Exam"=>array_values($examlist),
-                            'used'=>Tparent::get_proper_format($used_memory_bytes),
+                            // 'used'=>Tparent::get_proper_format($used_memory_bytes),
                            
-                            'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
-                            'execution_time'=>$execution_time,
+                            // 'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
+                            // 'execution_time'=>$execution_time,
                         ];
                   }               
                    elseif($change=="s"){ 
-                  $student=static::examstudent($output,$subject_name,$section,$data->exam_id,$data->section_id,$test_type,$mode,$date,$page,$campus_id,$emp)['StudentList'];
-                  // return $student;
+                  $student=static::examstudent($output,$subject_name,$section,$data->exam_id,$data->section_id,$test_type,$mode,$date,$page,$campus_id,$emp,$data)['StudentList'];
                   if($student==0)
                      return [
                         'Login' => [
@@ -260,20 +244,18 @@ class Subject extends Model
                       $studentlist[$i]['ALL_INDIA_RANK']=$student[$j]['obtained'][$i]->ALL_INDIA_RANK;
                       $studentlist[$i]['CAMPUS_ID']=$student[$j]['obtained'][$i]->this_college_id;
                       $studentlist[$i]['TOTAL']=$student[$j]['obtained'][$i]->{strtoupper($subject_name)}.'/'.$student[$j]['max_marks'];
-                      // $studentlist[$i][strtoupper($subject_name)]=$student[$j]['obtained'][$i]->{strtoupper($subject_name)};
                       
 
                     $data1=new \stdClass(); 
                     $data1->exam_id=$data->exam_id;
                     $data1->STUD_ID=$student[$j]['obtained'][$i]->STUD_ID;
-                      // $studentlist[$i]['Exam_Info']=Modesyear::exam_info($data1,1);
                     }}
                   }
 
-               $end_time = microtime(true);
-               $execution_time = ($end_time - $start_time);
-               $end=memory_get_usage(false);
-               $used_memory_bytes=$end-$start;
+               // $end_time = microtime(true);
+               // $execution_time = ($end_time - $start_time);
+               // $end=memory_get_usage(false);
+               // $used_memory_bytes=$end-$start;
                   if(empty($studentlist1))
                     return [
 
@@ -297,23 +279,23 @@ class Subject extends Model
                             ],
                     "Totalpage"=>ceil($totalpage),
                     "Block_Count"=>$block_no[0],
-                    // "Max_Marks"=>$studentlist1['max_marks'],
-                    // "Start_Date"=>$studentlist1['start_date'],
-                    // "Test_Code"=>$studentlist1['test_code'],
-                    // "Section_Name"=>$studentlist1['section_name'],
                     "Data"=>array_values($studentlist),
-                            'used'=>Tparent::get_proper_format($used_memory_bytes),
+                            // 'used'=>Tparent::get_proper_format($used_memory_bytes),
                            
-                            'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
-                            'execution_time'=>$execution_time,
+                            // 'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
+                            // 'execution_time'=>$execution_time,
                   ];
                 }
 
     }
-    public static function examstudent($output,$subject_name,$section,$exam_id,$section_id,$test_type,$mode,$date,$page,$campus_id,$emp)
+    public static function examstudent($output,$subject_name,$section,$exam_id,$section_id,$test_type,$mode,$date,$page,$campus_id,$emp,$data)
     {
-       $start= memory_get_usage(false); 
-    $start_time = microtime(true);
+      if(isset($data->USER_ID))
+        $user=$data->USER_ID;
+      else
+        $user=Auth::user()->PAYROLL_ID;
+    //    $start= memory_get_usage(false); 
+    // $start_time = microtime(true);
         $examlist=array();
         $studentlist=array();
             $result=array();
@@ -336,21 +318,7 @@ class Subject extends Model
 
                $correctans=$correctans->get();
           if(!empty($correctans[0])){
-            // return ['Result'=>['Login' => [
-            //                 'response_message'=>"No record found for this information",
-            //                 'response_code'=>"0",
-            //                 ]],'ExamList'=>$examlist
-            //                 ,'StudentList'=>['Login' => [
-            //                 'response_message'=>"No record found for this information",
-            //                 'response_code'=>"0",
-            //                 ]],
-            //               ];
-               
-               // if(isset($correctans))
            $examlist[]=$correctans[0];
-         // else
-         //  $examlist[]="";
-
            if($correctans[0]->omr_scanning_type=='advanced')
            {
              $filedata=ias_model_year_paper($correctans[0]->model_year,$correctans[0]->paper);    
@@ -379,7 +347,6 @@ class Subject extends Model
                             'response_code'=>"0",
                             ]],
                           ];
-                          // return ['Result'=>$a];
             $max=array_combine((array)$a,$b);
             $list=$max[strtoupper($subject_name)];
 
@@ -388,12 +355,9 @@ class Subject extends Model
              
 
               foreach ($arr as $keyh => $valueh) {
-                // $a[]=$arr[$keyh];
                 if(isset($arr[$keyh]) && isset($b[0][$keyh]))
                 $max[$arr[$keyh]]=$b[$keyh];
-              // dd($b[2]);
               }
-              // dd($b[0]['mathematics']);
                if(!isset($max[$subject_name]))
                   return ['Result'=>['Login' => [
                             'response_message'=>"No record found for this information",
@@ -422,11 +386,8 @@ class Subject extends Model
                             'response_code'=>"0",
                             ]],
                           ];
-                             // DB::enableQueryLog();
-                          // dd($list);
               if($exam_id !="0")
 
-            // $res=DB::select("select (".$list1."/".$list.")*100 as percentage,a.STUD_ID,test_code_sl_id,st.SECTION_ID,".$list1.",ts.section_name,test_code,start_date,PROGRAM_RANK,STREAM_RANK,SEC_RANK,CAMP_RANK,CITY_RANK,DISTRICT_RANK,STATE_RANK,ALL_INDIA_RANK,st.NAME,st.SURNAME,this_college_id from ".$table."  as `a` inner join `scaitsqb.t_student_bio` as `st` on `st`.`ADM_NO` = `a`.`STUD_ID` inner join t_college_section as ts on ts.SECTION_ID=st.SECTION_ID inner join 1_exam_admin_create_exam as ex on ex.sl=test_code_sl_id where `test_code_sl_id` = '".$exam_id."' and `st`.`SECTION_ID`='".$section_id."'"); 
           $res=DB::table($table.' as a')
            ->join(DB::raw('scaitsqb.t_student_bio AS st'),'st.ADM_NO','=','a.STUD_ID')
             ->join('1_exam_admin_create_exam as ex','ex.sl','=','test_code_sl_id')
@@ -436,11 +397,15 @@ class Subject extends Model
          ->where('test_code_sl_id',$exam_id)
           ->where('st.SECTION_ID',$section_id)
           ->where('st.CAMPUS_ID',$campus_id)
-          ->where('ie.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)
+          ->where('ie.group_id',$data->group_id)
+          ->where('ie.class_id',$data->class_id)
+          ->where('ie.stream_id',$data->stream_id)
+          ->where('ie.program_id',$data->program_id)
+          ->where('ie.subject_id',$data->subject_id)
+          ->where('ie.EMPLOYEE_ID',$user)
           ->orderBy('percentage','DESC')
           ->get();
           else
-          // $res=DB::select("select (".$list1."/".$list.")*100 as percentage,a.STUD_ID,test_code_sl_id,st.SECTION_ID,".$list1.",ts.section_name,test_code,start_date,PROGRAM_RANK,STREAM_RANK,SEC_RANK,CAMP_RANK,CITY_RANK,DISTRICT_RANK,STATE_RANK,ALL_INDIA_RANK,st.NAME,st.SURNAME,this_college_id from ".$table." as `a` inner join `scaitsqb.t_student_bio` as `st` on `st`.`ADM_NO` = `a`.`STUD_ID` inner join t_college_section as ts on ts.SECTION_ID=st.SECTION_ID inner join 1_exam_admin_create_exam as ex on ex.sl=test_code_sl_id where `test_code_sl_id` = '".$value->test_sl."' and `st`.`SECTION_ID` in (".implode(',',$section1).")");
          
           $res=DB::table($table.' as a')
            ->join(DB::raw('scaitsqb.t_student_bio AS st'),'st.ADM_NO','=','a.STUD_ID')
@@ -451,15 +416,17 @@ class Subject extends Model
           ->where('test_code_sl_id',$value->test_sl)
           ->whereIn('st.SECTION_ID',$section1)
           ->where('st.CAMPUS_ID',$campus_id)
-          ->where('ie.EMPLOYEE_ID',Auth::user()->PAYROLL_ID) 
+          ->where('ie.group_id',$data->group_id)
+          ->where('ie.class_id',$data->class_id)
+          ->where('ie.stream_id',$data->stream_id)
+          ->where('ie.program_id',$data->program_id)
+          ->where('ie.subject_id',$data->subject_id)
+          ->where('ie.EMPLOYEE_ID',$user) 
           ->orderBy('percentage','DESC')                   
           ->get();
-          // dd($res);
-          // $query = DB::getQueryLog();
            $studentlist[$key]['obtained']=$res;
            $studentlist[$key]['max_marks']=$list;
 
-// dd($res);
             $addition=0;
             foreach ($res as $key2 => $value2) {
                 $addition+=$value2->percentage;
@@ -486,20 +453,22 @@ class Subject extends Model
              $a++;
               }
             }
-               $end_time = microtime(true);
-               $execution_time = ($end_time - $start_time);
-               $end=memory_get_usage(false);
-               $used_memory_bytes=$end-$start;
+               // $end_time = microtime(true);
+               // $execution_time = ($end_time - $start_time);
+               // $end=memory_get_usage(false);
+               // $used_memory_bytes=$end-$start;
         return [
                           "Result"=>['Login' => [
                                             'response_message'=>"success",
                                             'response_code'=>"1",
                                             ],
                             "data"=>$final,
-                            'used'=>Tparent::get_proper_format($used_memory_bytes),
+                            "subject_name"=>static::where('subject_id',$data->subject_id)->pluck('subject_name')[0],
+                            "program_name"=>Program::where('program_id',$data->program_id)->pluck('program_name')[0],
+                            // 'used'=>Tparent::get_proper_format($used_memory_bytes),
                            
-                            'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
-                            'execution_time'=>$execution_time,
+                            // 'peak'=>Tparent::get_proper_format(memory_get_peak_usage(true)),
+                            // 'execution_time'=>$execution_time,
           ],
           "ExamList"=>array_values($examlist),
           "StudentList"=>$studentlist,
@@ -509,7 +478,6 @@ class Subject extends Model
     public static function sectionlist($data)
     {
 
-      // SELECT s.SECTION_ID,cs.section_name FROM IP_Exam_Section as s inner join t_college_section as cs on s.SECTION_ID=cs.SECTION_ID where s.EMPLOYEE_ID='VSP204421' ORDER BY (SELECT DISTINCT s.SECTION_ID from 101_mpc_marks as mm inner join scaitsqb.t_student_bio as st on st.ADM_NO=mm.STUD_ID where st.SECTION_ID=s.SECTION_ID ) DESC
 
       if($data->USER_ID)
 
@@ -517,12 +485,7 @@ class Subject extends Model
       else
 
       $result=DB::select("SELECT DISTINCT s.SECTION_ID,cs.section_name FROM IP_Exam_Section as s inner join t_college_section as cs on s.SECTION_ID=cs.SECTION_ID where s.EMPLOYEE_ID='".Auth::user()->PAYROLL_ID."'  and s.GROUP_ID='".$data->group_id."'  and s.CLASS_ID='".$data->class_id."'  and s.STREAM_ID='".$data->stream_id."' and s.PROGRAM_ID='".$data->program_id."' and s.SUBJECT_ID='".$data->subject_id."' ORDER BY (SELECT DISTINCT s.SECTION_ID from 101_mpc_marks as mm inner join scaitsqb.t_student_bio as st on st.ADM_NO=mm.STUD_ID where st.SECTION_ID=s.SECTION_ID ) DESC");
-      // $result=DB::table('IP_Exam_Section as is')
-      //               ->join('t_college_section as cs','is.SECTION_ID','=','cs.SECTION_ID')
-      //               ->where('is.EMPLOYEE_ID',Auth::user()->payroll_id)
-      //               ->select('is.SECTION_ID','cs.section_name')
-      //               ->distinct('is.SECTION_ID','cs.section_name')
-      //               ->get();
+    
 
       return ['Login' => [
                             'response_message'=>"success",

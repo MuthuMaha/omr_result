@@ -385,7 +385,7 @@ class Result extends Authenticatable
       $date=date('Y-m');
     $c=DB::table('result_application_blockcount')->where('API','mdexamlist')->pluck('Block_Count')[0];
     $r=array();
-    $res=DB::table('1_exam_admin_create_exam')
+    $res=DB::table('1_exam_admin_create_exam as e')
             ->select('sl','test_code',DB::raw("DATE_FORMAT(e.start_date,'%d-%m-%Y') as start_date"),'max_marks','mode');
             if(isset($rg))
             $res->where('result_generated1_no0',$rg);

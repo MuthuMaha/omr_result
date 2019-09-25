@@ -74,6 +74,11 @@ $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
          $class=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')
          // ->join('scaitsqb.t_student_bio as t','t.SECTION_ID','=','tc.SECTION_ID')
          ->where('s.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)->where('s.GROUP_ID',$group_id)->distinct()->pluck('s.CLASS_ID');
+
+         if($request->user_type=='student')
+            $class=Student::where('group_id',$group_id)->distinct()->pluck('CLASS_ID');
+
+
         $query=class_year::whereIn('CLASS_ID',$class);
          // $query=$class;
         // if(count($class)!=0)
@@ -99,6 +104,9 @@ $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
          $stream=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')
          // ->join('scaitsqb.t_student_bio as t','t.SECTION_ID','=','tc.SECTION_ID')
          ->where('s.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)->where('s.GROUP_ID',$group_id)->where('s.CLASS_ID',$class_id)->pluck('s.STREAM_ID');  
+
+          if($request->user_type=='student')
+            $stream=Student::where('group_id',$group_id)->where('class_id',$class_id)->distinct()->pluck('STREAM_ID');
       
         $query=Stream::whereIn('STREAM_ID',$stream);
         // if(count($stream)!=0)
@@ -123,6 +131,9 @@ $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
          $program=DB::table('IP_Exam_Section as s')->join('t_college_section as tc','s.SECTION_ID','=','tc.section_id')
          // ->join('scaitsqb.t_student_bio as t','t.SECTION_ID','=','tc.SECTION_ID')
          ->where('s.EMPLOYEE_ID',Auth::user()->PAYROLL_ID)->where('s.CLASS_ID',$class_id)->where('s.STREAM_ID',$stream_id)->pluck('s.PROGRAM_ID');  
+
+          if($request->user_type=='student')
+            $program=Student::where('class_id',$class_id)->where('stream_id',$stream_id)->distinct()->pluck('PROGRAM_ID');
 // dd($class_id);
         //Get stream and class id for required programs
        
@@ -159,7 +170,7 @@ $query=groups::distinct('GROUP_ID')->orderBy('GROUP_ID');
        //  else
          $res->orwhere('e.USER_NAME','like','%'.$request->USERID.'%');
 
-         $res=$res->select('e.PAYROLL_ID as USERID','e.NAME','tc.CAMPUS_NAME','e.CAMPUS_ID')->limit(50)->get();
+         $res=$res->select('e.PAYROLL_ID as USERID','e.USER_NAME as NAME','tc.CAMPUS_NAME','e.CAMPUS_ID')->limit(50)->get();
              }
         else{
          $res=DB::table('scaitsqb.t_student_bio as st')->

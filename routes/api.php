@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Input;
 	Route::get('sendmessage','OmrControllers\ResultController@sendmessage');
 	
 	Route::post('resultLogin', 'OmrControllers\ResultController@login');
-	Route::group([ 'middleware' => 'auth:token' ], function () 
+	Route::group([ 'middleware' =>['apicache','auth:token'] ], function () 
 	{	
 		/*OMR Result Application*/	
 		// Route::post('showProfile','redisController@showProfile');
@@ -55,9 +55,9 @@ use Illuminate\Support\Facades\Input;
 		Route::post('search','OmrControllers\ResultController1@search');
 		Route::post('md_studentlist','OmrControllers\ResultController1@md_studentlist');
 		Route::post('md_employeelist','OmrControllers\ResultController1@md_employeelist');
-		Route::get('class_years/{group_id}','OmrControllers\ResultController1@class_year_wrt_group');
-		Route::get('streams/{group_id}/{class_id}','OmrControllers\ResultController1@stream_wrt_group_class_year');
-		Route::get('programs/{stream_id}/{class_id}','OmrControllers\ResultController1@programs_wrt_stream_class_year');
+		Route::get('class_years/{group_id}/{user_type}','OmrControllers\ResultController1@class_year_wrt_group');
+		Route::get('streams/{group_id}/{class_id}/{user_type}','OmrControllers\ResultController1@stream_wrt_group_class_year');
+		Route::get('programs/{stream_id}/{class_id}/{user_type}','OmrControllers\ResultController1@programs_wrt_stream_class_year');
 		Route::post('getExamData', 'AuthController@tokenAuthCheck'); 
 		Route::post('uploadTemplate','AuthController@templateData');
 		Route::post('deleteTemplate','AuthController@templateDelete');

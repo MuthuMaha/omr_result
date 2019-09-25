@@ -56,6 +56,8 @@ public static function AnswerObtain($data,$ans,$type)
     $astring=Exam::nonadvanced($path,$ans[0]->sl,$data);
      if(count($astring))
      $answer1=explode('   ', $astring['Line']);
+   if(count($answer1)==1)
+    $answer1=array();
       $a=1;
       $ad=1;
     }

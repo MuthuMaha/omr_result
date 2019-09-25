@@ -148,7 +148,7 @@ class Student extends Authenticatable
       $res=Student::from('scaitsqb.t_student_bio as a')
         // ->join('1_exam_gcsp_id as b','b.STUD_ID','=','a.ADM_NO')
         ->join('t_college_section as b','b.SECTION_ID','=','a.SECTION_ID')
-        ->join('ip_exam_section as is','is.SECTION_ID','=','b.SECTION_ID')
+        // ->join('ip_exam_section as is','is.SECTION_ID','=','b.SECTION_ID')
         ->where('a.GROUP_ID',$request->group_id)
         ->where('a.CLASS_ID',$request->class_id)
         ->where('a.STREAM_ID',$request->stream_id)

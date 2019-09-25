@@ -16,6 +16,7 @@ use App\Http\Requests\LoginResult;
 use App\Http\Requests\Totalpercentage;
 use App\Http\Requests\Examlist;
 use App\Employee;
+use App\Apicache;
 // use App\BaseModels\Student;
 use App\OmrModels\Tparent;
 use Auth;
@@ -48,12 +49,31 @@ class ResultController extends Controller
     public function total_percentage(Request $request){
         if($request->user_type=='student' || $request->user_type=='parent' ){
         $res=Exam::type($request);
+        $un=Auth::user()->ADM_NO;
+         $st=Apicache::updateOrCreate([ 'USERNAME'=>$un,
+            'user_type'=>$request->user_type],[
+            'USERNAME'=>$un,
+            'user_type'=>$request->user_type,
+            'total_percentage'=>json_encode($res),
+        ]);
         }
         else{
             $change="p";
         $res=Subject::teacher_percentage($request,$change);
+        $un=Auth::user()->PAYROLL_ID;
+         $st=Apicache::updateOrCreate([ 'USERNAME'=>$un,
+            'user_type'=>$request->user_type],[
+            'USERNAME'=>$un,
+            'user_type'=>$request->user_type,
+            'total_percentage'=>json_encode($res),
+            'group_id'=>$request->group_id,
+            'class_id'=>$request->class_id,
+            'stream_id'=>$request->stream_id,
+            'program_id'=>$request->program_id,
+            'subject_id'=>$request->subject_id,
+        ]);
         }
-
+       
         return $res;
     }
     public function md_total_percentage(Request $request){
@@ -77,10 +97,36 @@ class ResultController extends Controller
         if($request->user_type=='student'||$request->user_type=='parent')
         {
         $res=Exam::examlist($request);
+         $un=Auth::user()->ADM_NO;
+        //  $st=Apicache::updateOrCreate([ 'USERNAME'=>$un,
+        //     'user_type'=>$request->user_type],[
+        //     'USERNAME'=>$un,
+        //     'user_type'=>$request->user_type,
+        //     'examlist'=>json_encode($res),
+        // ]);
         }
         else{
              $change="e";
         $res=Subject::teacher_percentage($request,$change);
+        if($request->USER_ID)
+            $un=$request->USER_ID;
+        else
+            $un=Auth::user()->PAYROLL_ID;
+        //  $st=Apicache::updateOrCreate([ 'USERNAME'=>$un,
+        //     'user_type'=>$request->user_type],[
+        //     'USERNAME'=>$un,
+        //     'user_type'=>$request->user_type,
+        //     'examlist'=>json_encode($res),
+        //     'group_id'=>$request->group_id,
+        //     'class_id'=>$request->class_id,
+        //     'stream_id'=>$request->stream_id,
+        //     'program_id'=>$request->program_id,
+        //     'subject_id'=>$request->subject_id,
+        //     'page'=>$request->page,
+        //     'mode_id'=>$request->mode_id,
+        //     'test_type'=>$request->test_type,
+        //     'date'=>$request->date,
+        // ]);
             }
         return $res;
     }
